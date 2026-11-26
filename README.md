@@ -4,7 +4,7 @@ Lightweight client-side LRC lyric overlay for Minecraft Java 1.20.1, intended fo
 
 ## Status
 
-**Prototype: local LRC timeline only.** This version does not connect to YouTube Music, YouTube, Google OAuth, Android MediaSession, or another music player. The lyric clock is started and paused manually in Minecraft. Automatic music-player synchronization is not implemented.
+**Prototype: local LRC plus an external now-playing file bridge.** The mod can read playback metadata and position from `lyricsflow/nowplaying.properties`, allowing a separate Android companion to pass data into the HUD. This Fabric mod itself still does not access Android MediaSession, YouTube Music, YouTube, or Google OAuth. A companion app/service with the appropriate Android media-session access is not included yet.
 
 ## Build
 
@@ -46,9 +46,23 @@ Example LRC:
 
 The HUD shows the active line and the next line. Keybinds can be changed in Minecraft Controls.
 
+## External player bridge (companion protocol)
+
+An optional companion process can update `lyricsflow/nowplaying.properties`. The mod checks this file every 10 game ticks (about twice per second). When the file is fresh (updated within 15 seconds), its playback position drives the LRC timeline and its title/artist appear in the HUD. If the file is missing or stale, the mod falls back to its manual in-game clock.
+
+Example file (UTF-8 Java Properties format):
+
+    title=Song title
+    artist=Artist name
+    position_ms=12500
+    playing=true
+    updated_at_ms=1795651200000
+
+The companion must refresh `updated_at_ms` regularly and write the current playback position in milliseconds. For reliable updates, write a temporary file and atomically rename it to `nowplaying.properties`. The timestamp is Unix epoch milliseconds. This is a file-based handoff, not direct MediaSession integration; no Android permissions or media-player access are provided by the Minecraft mod.
+
 ## Android notes
 
-No root, Shizuku, or separate Android app is required. The current version uses Fabric client APIs only. Android MediaSession integration and device-specific Zalith runtime testing remain future work.
+No root, Shizuku, or separate Android app is required. The current version uses Fabric client APIs only. The Android companion that reads MediaSession and writes this bridge file, plus device-specific Zalith runtime testing, remain future work.
 
 Sodium and Indium are not required by this mod and are not modified by it.
 
