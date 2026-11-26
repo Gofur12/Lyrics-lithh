@@ -89,7 +89,7 @@ public final class LyricsFlowScreen extends Screen {
         int x = panelLeft + 12;
         int y = panelTop + 74;
         int fieldWidth = panelWidth - 24;
-        playlistInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20, Text.literal("Nama playlist / judul lagu"));
+        playlistInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20, Text.literal("Nama playlist / Judul | file.lrc"));
         playlistInput.setMaxLength(100);
         addDrawableChild(playlistInput);
 
@@ -145,7 +145,8 @@ public final class LyricsFlowScreen extends Screen {
             PlaylistStore.Playlist p = PlaylistStore.selected(selectedPlaylist);
             if (p != null && !p.tracks.isEmpty()) {
                 selectedTrack = Math.floorMod(selectedTrack, p.tracks.size());
-                LyricsFlowClient.selectLocalTrack(p.tracks.get(selectedTrack));
+                PlaylistStore.Track track = p.tracks.get(selectedTrack);
+                LyricsFlowClient.selectLocalTrack(track.title, track.lrcFile);
             }
         }).dimensions(x + third + gap, y + 96, third, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Lagu ›"), b -> {
@@ -233,11 +234,13 @@ public final class LyricsFlowScreen extends Screen {
             context.drawTextWithShadow(textRenderer, "Belum ada lagu. Isi judul lalu + Tambah lagu.", x, y + 26, 0xFFB0B8C5);
         } else {
             selectedTrack = Math.floorMod(selectedTrack, playlist.tracks.size());
-            String title = playlist.tracks.get(selectedTrack);
-            context.drawTextWithShadow(textRenderer, "Lagu " + (selectedTrack + 1) + "/" + playlist.tracks.size() + ": " + trim(title, 36), x, y + 26, 0xFF70C7D8);
+            PlaylistStore.Track track = playlist.tracks.get(selectedTrack);
+            context.drawTextWithShadow(textRenderer, "Lagu " + (selectedTrack + 1) + "/" + playlist.tracks.size() + ": " + trim(track.title, 36), x, y + 26, 0xFF70C7D8);
+            context.drawTextWithShadow(textRenderer, track.lrcFile.isBlank() ? "LRC: otomatis berdasarkan judul" : "LRC: " + trim(track.lrcFile, 34), x, y + 40, 0xFF8995A7);
             context.drawTextWithShadow(textRenderer, "Gunakan tombol Hapus lagu untuk menghapus item ini.", x, y + 44, 0xFFB0B8C5);
         }
-        context.drawTextWithShadow(textRenderer, "Data lokal: lyricsflow/playlists.json", x, y + 62, 0xFF8995A7);
+        context.drawTextWithShadow(textRenderer, "Tambah: Judul | nama-file.lrc", x, y + 62, 0xFF8995A7);
+        context.drawTextWithShadow(textRenderer, "File LRC berada di folder lyricsflow/", x, y + 76, 0xFF8995A7);
     }
 
     private static String formatTime(long milliseconds) {
