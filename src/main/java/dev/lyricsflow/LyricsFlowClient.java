@@ -81,7 +81,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             if (!visible || track.isEmpty()) return;
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.options.hudHidden) return;
-            long position = externalState != null ? externalState.positionMs() : positionMs();
+            long position = externalState != null ? externalPositionMs(externalState) : positionMs();
             LrcTrack.Entry current = track.current(position);
             LrcTrack.Entry next = track.next(position);
             int centerX = client.getWindow().getScaledWidth() / 2;
@@ -157,6 +157,11 @@ public final class LyricsFlowClient implements ClientModInitializer {
 
     private static long positionMs() {
         return playing ? Math.max(0, System.currentTimeMillis() - startedAt) : pausedAt;
+    }
+
+    private static long externalPositionMs(NowPlayingBridge.State state) {
+        long elapsed = state.playing() ? Math.max(0L, System.currentTimeMillis() - state.sampledAtMs()) : 0L;
+        return Math.max(0L, state.positionMs() + elapsed);
     }
 
     private static void loadTrack() {
