@@ -183,10 +183,18 @@ public final class LyricsFlowScreen extends Screen {
         int x = panelLeft + 22;
         context.fill(x, y + 8, x + 76, y + 84, 0xFF394252);
         context.drawCenteredTextWithShadow(textRenderer, "♪", x + 38, y + 38, 0xFFB9DDE5);
-        context.drawTextWithShadow(textRenderer, LyricsFlowClient.getSelectedLocalTitle().isEmpty() ? "Belum ada lagu" : trim(LyricsFlowClient.getSelectedLocalTitle(), 30), x + 90, y + 12, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer,
-                LyricsFlowClient.hasExternalPlayer() ? "Posisi dari pemutar eksternal" : "Timeline lirik internal",
-                x + 90, y + 27, 0xFFB0B8C5);
+        String displayTitle = LyricsFlowClient.getLrcTitle().isBlank()
+                ? LyricsFlowClient.getSelectedLocalTitle() : LyricsFlowClient.getLrcTitle();
+        String displayArtist = LyricsFlowClient.getLrcArtist();
+        String displayAlbum = LyricsFlowClient.getLrcAlbum();
+        context.drawTextWithShadow(textRenderer, displayTitle.isEmpty() ? "Belum ada lagu" : trim(displayTitle, 30),
+                x + 90, y + 12, 0xFFFFFFFF);
+        String subtitle = !displayArtist.isBlank() ? displayArtist
+                : (LyricsFlowClient.hasExternalPlayer() ? "Pemutar eksternal" : "Timeline lirik internal");
+        context.drawTextWithShadow(textRenderer, trim(subtitle, 34), x + 90, y + 27, 0xFFB0B8C5);
+        if (!displayAlbum.isBlank()) {
+            context.drawTextWithShadow(textRenderer, "Album: " + trim(displayAlbum, 28), x + 90, y + 40, 0xFF8995A7);
+        }
         int barLeft = x + 90;
         int barRight = panelLeft + panelWidth - 22;
         int barWidth = Math.max(1, barRight - barLeft);
