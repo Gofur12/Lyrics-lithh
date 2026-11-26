@@ -65,7 +65,7 @@ final class PlaylistStore {
     }
     private static boolean validLrcPath(String value) {
         if (value.isBlank() || value.startsWith("/") || value.startsWith("\\\\") || value.contains(":")) return false;
-        String normalized = value.replace('\\\\', '/');
+        String normalized = value.replace('\\', '/');
         if (!normalized.toLowerCase(Locale.ROOT).endsWith(".lrc")) return false;
         for (String part : normalized.split("/")) if (part.equals("..") || part.isBlank()) return false;
         return true;
