@@ -77,7 +77,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
                 lastExternalTitle = state.title();
                 loadTrackForTitle(state.title());
             }
-            while (toggleKey.wasPressed()) visible = !visible;
+            while (toggleKey.wasPressed()) toggleOverlay();
             while (playPauseKey.wasPressed()) togglePlayback();
             while (reloadKey.wasPressed()) loadTrack();
             while (menuKey.wasPressed()) client.setScreen(new LyricsFlowScreen());
@@ -194,7 +194,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         }
         loadTrackFromFile(file);
     }
-    static void toggleOverlay() { visible = !visible; }
+    static void toggleOverlay() { visible = !visible; saveSettings(); }
     static void startPlayback() { if (!playing) togglePlayback(); }
     static void pausePlayback() { if (playing) togglePlayback(); }
     static void stopPlayback() {
@@ -239,6 +239,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             properties.load(reader);
             lyricOffsetMs = Math.max(-60000L, Math.min(60000L,
                     Long.parseLong(properties.getProperty("offset_ms", "0").trim())));
+            visible = Boolean.parseBoolean(properties.getProperty("hud_visible", "true"));
         } catch (IOException | NumberFormatException exception) {
             lyricOffsetMs = 0L;
         }
@@ -249,6 +250,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         Path file = client.runDirectory.toPath().resolve(SETTINGS_FILE);
         java.util.Properties properties = new java.util.Properties();
         properties.setProperty("offset_ms", Long.toString(lyricOffsetMs));
+        properties.setProperty("hud_visible", Boolean.toString(visible));
         try {
             Files.createDirectories(file.getParent());
             try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
