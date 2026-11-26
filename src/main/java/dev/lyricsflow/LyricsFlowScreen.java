@@ -72,6 +72,13 @@ public final class LyricsFlowScreen extends Screen {
                     else LyricsFlowClient.startPlayback();
                     clearAndInit();
                 }).dimensions(panelLeft + panelWidth / 2 - 32, panelTop + panelHeight - 34, 64, 20).build());
+                if (selectedTab == Tab.APP) {
+                    addDrawableChild(ButtonWidget.builder(Text.literal(
+                            LyricsFlowClient.isVisible() ? "Sembunyikan lirik HUD" : "Tampilkan lirik HUD"), button -> {
+                        LyricsFlowClient.toggleOverlay();
+                        clearAndInit();
+                    }).dimensions(panelLeft + 22, panelTop + 104, panelWidth - 44, 22).build());
+                }
             }
         }
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
