@@ -2,5 +2,6 @@
   "category.lyricsflow": "LyricsFlow",
   "key.lyricsflow.toggle": "Toggle lyrics overlay",
   "key.lyricsflow.play_pause": "Start / pause lyric timeline",
-  "key.lyricsflow.reload": "Reload current.lrc"
+  "key.lyricsflow.reload": "Reload current.lrc",
+  "key.lyricsflow.menu": "Open LyricsFlow touch menu"
 }
