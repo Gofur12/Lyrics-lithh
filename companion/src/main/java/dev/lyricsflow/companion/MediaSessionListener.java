@@ -69,6 +69,7 @@ public final class MediaSessionListener extends NotificationListenerService {
         String artist = "";
         long position = 0L;
         boolean playing = false;
+        boolean foundSession = false;
         try {
             ComponentName component = new ComponentName(this, MediaSessionListener.class);
             List<MediaController> sessions = getActiveSessions(component);
@@ -89,6 +90,7 @@ public final class MediaSessionListener extends NotificationListenerService {
                     if (updated > 0) position += Math.max(0L, SystemClock.elapsedRealtime() - updated);
                 }
                 playing = status == PlaybackState.STATE_PLAYING;
+                foundSession = true;
                 break;
             }
         } catch (SecurityException ignored) { }
