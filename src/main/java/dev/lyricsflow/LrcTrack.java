@@ -47,5 +47,6 @@ public final class LrcTrack {
         return null;
     }
     public boolean isEmpty() { return entries.isEmpty(); }
+    public long durationMs() { return entries.isEmpty() ? 0L : entries.get(entries.size() - 1).timeMs(); }
     public record Entry(long timeMs, String text) {}
 }
