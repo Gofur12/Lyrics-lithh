@@ -19,7 +19,7 @@ public final class LyricsFlowScreen extends Screen {
     private int panelLeft, panelTop, panelWidth, panelHeight;
     private int selectedPlaylist;
     private int selectedTrack;
-    private TextFieldWidget playlistInput;
+    private TextFieldWidget playlistInput;\n    private TextFieldWidget serviceSearchInput;
 
     public LyricsFlowScreen() { super(Text.literal("LyricsFlow")); }
 
@@ -47,6 +47,8 @@ public final class LyricsFlowScreen extends Screen {
             initPlaylistControls();
         } else if (selectedTab == Tab.LYRICS) {
             initLyricsControls();
+        } else if (selectedTab == Tab.SPOTIFY || selectedTab == Tab.YOUTUBE) {
+            initServiceControls();
         } else {
             if (selectedTab == Tab.PLAYER) {
                 addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
@@ -83,6 +85,40 @@ public final class LyricsFlowScreen extends Screen {
         }
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
                 .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
+    }
+
+    private void initServiceControls() {
+        int x = panelLeft + 18;
+        int y = panelTop + 91;
+        int fieldWidth = panelWidth - 36;
+        String initial = !LyricsFlowClient.getLrcTitle().isBlank()
+                ? LyricsFlowClient.getLrcTitle() : LyricsFlowClient.getSelectedLocalTitle();
+        serviceSearchInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20,
+                Text.literal("Masukkan judul lagu atau artis"));
+        serviceSearchInput.setMaxLength(120);
+        serviceSearchInput.setText(initial);
+        serviceSearchInput.setPlaceholder(Text.literal("Judul lagu atau nama artis"));
+        addDrawableChild(serviceSearchInput);
+
+        String service = selectedTab == Tab.YOUTUBE ? "YouTube" : "Spotify";
+        addDrawableChild(ButtonWidget.builder(Text.literal("Salin link pencarian " + service), button -> {
+            String query = serviceSearchInput.getText().trim();
+            if (query.isEmpty()) {
+                if (client != null) client.inGameHud.setOverlayMessage(
+                        Text.literal("Masukkan judul lagu atau artis dulu."), false);
+                return;
+            }
+            String encoded = java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            String url = selectedTab == Tab.YOUTUBE
+                    ? "https://www.youtube.com/results?search_query=" + encoded
+                    : "https://open.spotify.com/search/" + encoded;
+            if (client != null) {
+                client.keyboard.setClipboard(url);
+                client.inGameHud.setOverlayMessage(
+                        Text.literal("Link pencarian " + service + " disalin. Tempel di browser/aplikasi."), false);
+            }
+        }).dimensions(x, y + 28, fieldWidth, 20).build());
     }
 
     private void initLyricsControls() {
@@ -201,8 +237,8 @@ public final class LyricsFlowScreen extends Screen {
             case PLAYER -> renderPlayer(context, contentTop);
             case LYRICS -> renderLyrics(context, contentTop);
             case PLAYLIST -> renderPlaylist(context, contentTop);
-            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Integrasi login dan pemutaran belum tersedia.");
-            case YOUTUBE -> renderService(context, contentTop, "YouTube", "youtube.com — bukan YouTube Music.");
+            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Cari lagu, lalu salin link untuk membuka Spotify.");
+            case YOUTUBE -> renderService(context, contentTop, "YouTube", "Cari video musik di YouTube biasa, bukan YouTube Music.");
             case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses audio Android belum terhubung.");
             case APP -> renderService(context, contentTop, "App", "Pengaturan lengkap tersedia melalui tombol Configure di Mod Menu.");
         }
@@ -282,7 +318,7 @@ public final class LyricsFlowScreen extends Screen {
 
     private void renderService(DrawContext context, int y, String name, String description) {
         context.drawTextWithShadow(textRenderer, name, panelLeft + 22, y + 18, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);\n        if (name.equals("YouTube") || name.equals("Spotify")) {\n            context.drawTextWithShadow(textRenderer, "Pencarian dibuka di aplikasi/browser Android.", panelLeft + 22, y + 54, 0xFF8995A7);\n            context.drawTextWithShadow(textRenderer, "Pemutaran langsung di Minecraft belum tersedia.", panelLeft + 22, y + 68, 0xFF8995A7);\n        }
     }
 
     @Override public boolean shouldPause() { return false; }
