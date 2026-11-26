@@ -36,6 +36,7 @@ Press **H** to open the touch-friendly menu with large buttons for overlay visib
 - `/lyricsflow toggle`
 - `/lyricsflow play`
 - `/lyricsflow pause`
+- `/lyricsflow menu` — open the touch control screen
 
 Example LRC:
 
