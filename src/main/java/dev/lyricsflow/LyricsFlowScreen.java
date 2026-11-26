@@ -54,6 +54,14 @@ public final class LyricsFlowScreen extends Screen {
                     else LyricsFlowClient.startPlayback();
                     clearAndInit();
                 }).dimensions(panelLeft + panelWidth / 2 - 68, panelTop + panelHeight - 34, 64, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("-5s"), button -> {
+                    LyricsFlowClient.seekBy(-5000L);
+                    clearAndInit();
+                }).dimensions(panelLeft + panelWidth / 2 - 112, panelTop + panelHeight - 34, 40, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("+5s"), button -> {
+                    LyricsFlowClient.seekBy(5000L);
+                    clearAndInit();
+                }).dimensions(panelLeft + panelWidth / 2 + 72, panelTop + panelHeight - 34, 40, 20).build());
                 addDrawableChild(ButtonWidget.builder(Text.literal("Stop"), button -> {
                     LyricsFlowClient.stopPlayback();
                     clearAndInit();
