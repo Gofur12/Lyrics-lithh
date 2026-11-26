@@ -143,6 +143,16 @@ public final class LyricsFlowClient implements ClientModInitializer {
                                     context.getSource().sendFeedback(Text.literal("LyricsFlow offset reset to 0 ms"));
                                     return 1;
                                 })))
+                        .then(literal("status").executes(context -> {
+                            String title = track.title().isBlank() ? selectedLocalTitle : track.title();
+                            if (title.isBlank()) title = "Belum ada lagu";
+                            String state = externalState != null ? "bridge eksternal" : "timeline internal";
+                            context.getSource().sendFeedback(Text.literal(
+                                    "LyricsFlow | " + title + " | " + state
+                                            + " | HUD: " + (visible ? "ON" : "OFF")
+                                            + " | offset: " + lyricOffsetMs + " ms"));
+                            return 1;
+                        }))
                         .then(literal("menu").executes(context -> {
                             context.getSource().getClient().setScreen(new LyricsFlowScreen());
                             return 1;
