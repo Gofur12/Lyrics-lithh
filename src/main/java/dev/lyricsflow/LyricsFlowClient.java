@@ -26,7 +26,6 @@ public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
     private static volatile NowPlayingBridge.State externalState;
     private static String lastExternalTitle = "";
-    private static Path loadedLyricsPath;
     private static int bridgePollTicks = 0;
     private static final AtomicBoolean bridgeRequestInFlight = new AtomicBoolean(false);
     private static final ExecutorService bridgeExecutor = Executors.newSingleThreadExecutor(r -> {
@@ -176,10 +175,9 @@ public final class LyricsFlowClient implements ClientModInitializer {
         try {
             Files.createDirectories(fallback.getParent());
             if (!Files.exists(fallback)) Files.writeString(fallback,
-                    "[00:00.00]Put your synced lyrics here\\n[00:05.00]Press P to start or pause\\n",
+                    "[00:00.00]Put your synced lyrics here\n[00:05.00]Press P to start or pause\n",
                     StandardCharsets.UTF_8);
             track = LrcTrack.parse(Files.readString(file, StandardCharsets.UTF_8));
-            loadedLyricsPath = file;
             pausedAt = 0;
             playing = false;
             client.execute(() -> client.inGameHud.setOverlayMessage(
@@ -196,7 +194,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         StringBuilder safe = new StringBuilder();
         for (int i = 0; i < title.length(); i++) {
             char ch = title.charAt(i);
-            safe.append("/\\\\:*?\"<>|".indexOf(ch) >= 0 ? '_' : ch);
+            safe.append("/\\:*?\"<>|".indexOf(ch) >= 0 ? '_' : ch);
         }
         String result = safe.toString().trim();
         while (result.endsWith(".") || result.endsWith(" ")) {
@@ -205,5 +203,4 @@ public final class LyricsFlowClient implements ClientModInitializer {
         if (result.length() > 80) result = result.substring(0, 80).trim();
         return result;
     }
-}
 }
