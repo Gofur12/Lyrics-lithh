@@ -32,12 +32,33 @@ public final class LyricsFlowScreen extends Screen {
                 }).dimensions(left, top + 32, buttonWidth, 24).build());
 
         addDrawableChild(ButtonWidget.builder(
-                Text.literal("Reload current.lrc"),
+                Text.literal("Reload lyrics"),
                 button -> LyricsFlowClient.reloadLyrics()).dimensions(left, top + 64, buttonWidth, 24).build());
+
+        int halfWidth = (buttonWidth - 8) / 2;
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("-100 ms"),
+                button -> {
+                    LyricsFlowClient.adjustLyricOffset(-100L);
+                    this.clearAndInit();
+                }).dimensions(left, top + 96, halfWidth, 24).build());
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("+100 ms"),
+                button -> {
+                    LyricsFlowClient.adjustLyricOffset(100L);
+                    this.clearAndInit();
+                }).dimensions(left + halfWidth + 8, top + 96, halfWidth, 24).build());
+
+        addDrawableChild(ButtonWidget.builder(
+                Text.literal("Reset offset"),
+                button -> {
+                    LyricsFlowClient.resetLyricOffset();
+                    this.clearAndInit();
+                }).dimensions(left, top + 128, buttonWidth, 24).build());
 
         addDrawableChild(ButtonWidget.builder(
                 Text.literal("Done"),
-                button -> close()).dimensions(left, top + 104, buttonWidth, 24).build());
+                button -> close()).dimensions(left, top + 160, buttonWidth, 24).build());
     }
 
     @Override
@@ -48,6 +69,9 @@ public final class LyricsFlowScreen extends Screen {
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("Touch controls for your synced LRC file"),
                 width / 2, height / 4 - 10, 0xAAAAAA);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("Lyric offset: " + LyricsFlowClient.getLyricOffsetMs() + " ms"),
+                width / 2, height / 4 + 2, 0x80D8FF);
     }
 
     @Override
