@@ -28,8 +28,9 @@ GitHub Actions builds the project on pushes and pull requests. Download the JAR 
 | O | Show or hide lyrics |
 | P | Start or pause lyric timeline |
 | L | Reload current.lrc |
+| H | Open touch-friendly control menu |
 
-You can also use these in-game commands (including on touch-first setups with a command input):
+Press **H** to open the touch-friendly menu with large buttons for overlay visibility, timeline start/pause, and LRC reload. You can also use these in-game commands (including on touch-first setups with a command input):
 
 - `/lyricsflow reload`
 - `/lyricsflow toggle`
