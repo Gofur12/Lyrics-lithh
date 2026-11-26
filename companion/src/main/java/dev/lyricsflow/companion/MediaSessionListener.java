@@ -7,7 +7,9 @@ import android.service.notification.NotificationListenerService;
 import android.content.ComponentName;
 import android.os.SystemClock;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
@@ -25,6 +27,7 @@ public final class MediaSessionListener extends NotificationListenerService {
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
+        if (worker != null && !worker.isShutdown()) return;
         worker = Executors.newSingleThreadExecutor();
         worker.execute(this::serve);
     }
@@ -47,11 +50,23 @@ public final class MediaSessionListener extends NotificationListenerService {
             while (!socket.isClosed()) {
                 try (Socket client = socket.accept()) {
                     client.setSoTimeout(1500);
-                    String body = snapshot();
+                    BufferedReader request = new BufferedReader(
+                            new InputStreamReader(client.getInputStream(), StandardCharsets.US_ASCII));
+                    String requestLine = request.readLine();
+                    String path = "";
+                    if (requestLine != null) {
+                        String[] parts = requestLine.split(" ", 3);
+                        if (parts.length >= 2) path = parts[1];
+                    }
+                    String body = "/nowplaying".equals(path) ? snapshot() : "Not Found\\n";
+                    int status = "/nowplaying".equals(path) ? 200 : 404;
+                    String reason = status == 200 ? "OK" : "Not Found";
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                     OutputStream out = client.getOutputStream();
-                    String headers = "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n"
-                            + "Cache-Control: no-store\r\nConnection: close\r\nContent-Length: " + bytes.length + "\r\n\r\n";
+                    String headers = "HTTP/1.1 " + status + " " + reason + "\\r\\n"
+                            + "Content-Type: text/plain; charset=utf-8\\r\\n"
+                            + "Cache-Control: no-store\\r\\nConnection: close\\r\\nContent-Length: "
+                            + bytes.length + "\\r\\n\\r\\n";
                     out.write(headers.getBytes(StandardCharsets.US_ASCII));
                     out.write(bytes);
                     out.flush();
@@ -65,11 +80,9 @@ public final class MediaSessionListener extends NotificationListenerService {
     }
 
     private String snapshot() {
-        String title = "";
-        String artist = "";
-        long position = 0L;
-        boolean playing = false;
-        boolean foundSession = false;
+        MediaController selected = null;
+        PlaybackState selectedState = null;
+        int selectedRank = -1;
         try {
             ComponentName component = new ComponentName(this, MediaSessionListener.class);
             List<MediaController> sessions = getActiveSessions(component);
@@ -77,26 +90,41 @@ public final class MediaSessionListener extends NotificationListenerService {
                 PlaybackState state = controller.getPlaybackState();
                 if (state == null) continue;
                 int status = state.getState();
-                if (status != PlaybackState.STATE_PLAYING && status != PlaybackState.STATE_PAUSED
-                        && status != PlaybackState.STATE_BUFFERING) continue;
+                int rank;
+                if (status == PlaybackState.STATE_PLAYING) rank = 3;
+                else if (status == PlaybackState.STATE_BUFFERING) rank = 2;
+                else if (status == PlaybackState.STATE_PAUSED) rank = 1;
+                else continue;
+
                 MediaMetadata metadata = controller.getMetadata();
-                if (metadata != null) {
-                    title = value(metadata.getString(MediaMetadata.METADATA_KEY_TITLE));
-                    artist = value(metadata.getString(MediaMetadata.METADATA_KEY_ARTIST));
+                boolean hasTitle = metadata != null
+                        && metadata.getString(MediaMetadata.METADATA_KEY_TITLE) != null
+                        && !metadata.getString(MediaMetadata.METADATA_KEY_TITLE).trim().isEmpty();
+                if (hasTitle) rank++;
+                if (rank > selectedRank) {
+                    selected = controller;
+                    selectedState = state;
+                    selectedRank = rank;
                 }
-                position = Math.max(0L, state.getPosition());
-                if (status == PlaybackState.STATE_PLAYING) {
-                    long updated = state.getLastPositionUpdateTime();
-                    if (updated > 0) position += Math.max(0L, SystemClock.elapsedRealtime() - updated);
-                }
-                playing = status == PlaybackState.STATE_PLAYING;
-                foundSession = true;
-                break;
             }
         } catch (SecurityException ignored) { }
 
-        return "title=" + enc(title) + "\nartist=" + enc(artist) + "\nposition_ms=" + position
-                + "\nplaying=" + playing + "\nupdated_at_ms=" + (foundSession ? System.currentTimeMillis() : 0L) + "\n";
+        if (selected == null || selectedState == null) {
+            return "title=\\nartist=\\nposition_ms=0\\nplaying=false\\nupdated_at_ms=0\\n";
+        }
+
+        MediaMetadata metadata = selected.getMetadata();
+        String title = metadata == null ? "" : value(metadata.getString(MediaMetadata.METADATA_KEY_TITLE));
+        String artist = metadata == null ? "" : value(metadata.getString(MediaMetadata.METADATA_KEY_ARTIST));
+        int status = selectedState.getState();
+        long position = Math.max(0L, selectedState.getPosition());
+        if (status == PlaybackState.STATE_PLAYING) {
+            long updated = selectedState.getLastPositionUpdateTime();
+            if (updated > 0) position += Math.max(0L, SystemClock.elapsedRealtime() - updated);
+        }
+        boolean playing = status == PlaybackState.STATE_PLAYING;
+        return "title=" + enc(title) + "\\nartist=" + enc(artist) + "\\nposition_ms=" + position
+                + "\\nplaying=" + playing + "\\nupdated_at_ms=" + System.currentTimeMillis() + "\\n";
     }
 
     private static String value(String text) { return text == null ? "" : text; }
