@@ -318,7 +318,11 @@ public final class LyricsFlowScreen extends Screen {
 
     private void renderService(DrawContext context, int y, String name, String description) {
         context.drawTextWithShadow(textRenderer, name, panelLeft + 22, y + 18, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);\n        if (name.equals("YouTube") || name.equals("Spotify")) {\n            context.drawTextWithShadow(textRenderer, "Pencarian dibuka di aplikasi/browser Android.", panelLeft + 22, y + 54, 0xFF8995A7);\n            context.drawTextWithShadow(textRenderer, "Pemutaran langsung di Minecraft belum tersedia.", panelLeft + 22, y + 68, 0xFF8995A7);\n        }
+        context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);
+        if (name.equals("YouTube") || name.equals("Spotify")) {
+            context.drawTextWithShadow(textRenderer, "Pencarian dibuka di aplikasi/browser Android.", panelLeft + 22, y + 54, 0xFF8995A7);
+            context.drawTextWithShadow(textRenderer, "Pemutaran langsung di Minecraft belum tersedia.", panelLeft + 22, y + 68, 0xFF8995A7);
+        }
     }
 
     @Override public boolean shouldPause() { return false; }
