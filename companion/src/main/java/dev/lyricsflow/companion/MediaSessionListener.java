@@ -2,6 +2,7 @@ package dev.lyricsflow.companion;
 
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.service.notification.NotificationListenerService;
 import android.content.ComponentName;
@@ -85,7 +86,9 @@ public final class MediaSessionListener extends NotificationListenerService {
         int selectedRank = -1;
         try {
             ComponentName component = new ComponentName(this, MediaSessionListener.class);
-            List<MediaController> sessions = getActiveSessions(component);
+            MediaSessionManager manager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
+            if (manager == null) throw new IllegalStateException("MediaSessionManager unavailable");
+            List<MediaController> sessions = manager.getActiveSessions(component);
             for (MediaController controller : sessions) {
                 PlaybackState state = controller.getPlaybackState();
                 if (state == null) continue;
