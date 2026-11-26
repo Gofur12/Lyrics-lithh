@@ -204,7 +204,7 @@ public final class LyricsFlowScreen extends Screen {
             case SPOTIFY -> renderService(context, contentTop, "Spotify", "Integrasi login dan pemutaran belum tersedia.");
             case YOUTUBE -> renderService(context, contentTop, "YouTube", "youtube.com — bukan YouTube Music.");
             case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses audio Android belum terhubung.");
-            case APP -> renderService(context, contentTop, "App", "Pengaturan LyricsFlow.");
+            case APP -> renderService(context, contentTop, "App", "Pengaturan lengkap tersedia melalui tombol Configure di Mod Menu.");
         }
         super.render(context, mouseX, mouseY, delta);
     }
