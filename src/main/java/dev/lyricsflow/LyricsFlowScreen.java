@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 
 /** Main LyricsFlow player shell, drawn with vanilla GUI primitives for Android compatibility. */
 public final class LyricsFlowScreen extends Screen {
@@ -28,7 +29,7 @@ public final class LyricsFlowScreen extends Screen {
     protected void init() {
         clearChildren();
         panelWidth = Math.min(430, Math.max(260, width - 24));
-        panelHeight = Math.min(230, Math.max(170, height - 36));
+        panelHeight = Math.min(selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
         panelLeft = (width - panelWidth) / 2;
         panelTop = (height - panelHeight) / 2;
 
@@ -84,8 +85,10 @@ public final class LyricsFlowScreen extends Screen {
                 }
             }
         }
-        addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
-                .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
+        if (selectedTab != Tab.PLAYLIST) {
+            addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
+                    .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
+        }
     }
 
     private void initServiceControls() {
@@ -115,9 +118,13 @@ public final class LyricsFlowScreen extends Screen {
                     ? "https://www.youtube.com/results?search_query=" + encoded
                     : "https://open.spotify.com/search/" + encoded;
             if (client != null) {
-                client.keyboard.setClipboard(url);
-                client.inGameHud.setOverlayMessage(
-                        Text.literal("Link pencarian " + service + " disalin. Tempel di browser/aplikasi."), false);
+                try {
+                    Util.getOperatingSystem().open(url);
+                    client.inGameHud.setOverlayMessage(Text.literal("Membuka pencarian " + service + "..."), false);
+                } catch (RuntimeException exception) {
+                    client.keyboard.setClipboard(url);
+                    client.inGameHud.setOverlayMessage(Text.literal("Gagal membuka otomatis. Link disalin ke clipboard."), false);
+                }
             }
         }).dimensions(x, y + 28, fieldWidth, 20).build());
     }
@@ -318,11 +325,11 @@ public final class LyricsFlowScreen extends Screen {
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
-        context.drawTextWithShadow(textRenderer, name, panelLeft + 22, y + 18, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);
         if (name.equals("YouTube") || name.equals("Spotify")) {
-            context.drawTextWithShadow(textRenderer, "Pencarian dibuka di aplikasi/browser Android.", panelLeft + 22, y + 54, 0xFF8995A7);
-            context.drawTextWithShadow(textRenderer, "Pemutaran langsung di Minecraft belum tersedia.", panelLeft + 22, y + 68, 0xFF8995A7);
+            context.drawTextWithShadow(textRenderer, "Masukkan judul/artis, lalu tekan tombol pencarian.", panelLeft + 22, y + 76, 0xFFB0B8C5);
+            context.drawTextWithShadow(textRenderer, "Aplikasi/browser dibuka; audio belum diputar di Minecraft.", panelLeft + 22, y + 90, 0xFF8995A7);
+        } else {
+            context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 18, 0xFFB0B8C5);
         }
     }
 
