@@ -58,7 +58,7 @@ public final class LyricsFlowScreen extends Screen {
 
     private void initPlaylistControls() {
         int x = panelLeft + 12;
-        int y = panelTop + 82;
+        int y = panelTop + 74;
         int fieldWidth = panelWidth - 24;
         playlistInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20, Text.literal("Nama playlist / judul lagu"));
         playlistInput.setMaxLength(100);
@@ -105,6 +105,25 @@ public final class LyricsFlowScreen extends Screen {
             selectedTrack = 0;
             clearAndInit();
         }).dimensions(x + half + gap, y + 72, half, 20).build());
+
+        int third = (fieldWidth - gap * 2) / 3;
+        addDrawableChild(ButtonWidget.builder(Text.literal("‹ Lagu"), b -> {
+            PlaylistStore.Playlist p = PlaylistStore.selected(selectedPlaylist);
+            if (p != null && !p.tracks.isEmpty()) selectedTrack = Math.floorMod(selectedTrack - 1, p.tracks.size());
+            clearAndInit();
+        }).dimensions(x, y + 96, third, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Gunakan"), b -> {
+            PlaylistStore.Playlist p = PlaylistStore.selected(selectedPlaylist);
+            if (p != null && !p.tracks.isEmpty()) {
+                selectedTrack = Math.floorMod(selectedTrack, p.tracks.size());
+                LyricsFlowClient.selectLocalTrack(p.tracks.get(selectedTrack));
+            }
+        }).dimensions(x + third + gap, y + 96, third, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Lagu ›"), b -> {
+            PlaylistStore.Playlist p = PlaylistStore.selected(selectedPlaylist);
+            if (p != null && !p.tracks.isEmpty()) selectedTrack = Math.floorMod(selectedTrack + 1, p.tracks.size());
+            clearAndInit();
+        }).dimensions(x + (third + gap) * 2, y + 96, third, 20).build());
     }
 
     @Override
@@ -135,8 +154,8 @@ public final class LyricsFlowScreen extends Screen {
         int x = panelLeft + 22;
         context.fill(x, y + 8, x + 76, y + 84, 0xFF394252);
         context.drawCenteredTextWithShadow(textRenderer, "♪", x + 38, y + 38, 0xFFB9DDE5);
-        context.drawTextWithShadow(textRenderer, "Belum ada lagu", x + 90, y + 12, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, "Pilih sumber musik atau playlist", x + 90, y + 27, 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer, LyricsFlowClient.getSelectedLocalTitle().isEmpty() ? "Belum ada lagu" : trim(LyricsFlowClient.getSelectedLocalTitle(), 30), x + 90, y + 12, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, "Pemutar timeline LRC internal", x + 90, y + 27, 0xFFB0B8C5);
         context.fill(x + 90, y + 52, panelLeft + panelWidth - 22, y + 55, 0xFF596273);
         context.drawTextWithShadow(textRenderer, "00:00", x + 90, y + 62, 0xFFB0B8C5);
         context.drawTextWithShadow(textRenderer, "--:--", panelLeft + panelWidth - 52, y + 62, 0xFFB0B8C5);
