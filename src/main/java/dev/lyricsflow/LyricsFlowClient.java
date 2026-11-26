@@ -166,6 +166,9 @@ public final class LyricsFlowClient implements ClientModInitializer {
         return Math.max(0L, state != null ? externalPositionMs(state) : positionMs());
     }
     static long getLyricsDurationMs() { return track.durationMs(); }
+    static String getLrcTitle() { return track.title(); }
+    static String getLrcArtist() { return track.artist(); }
+    static String getLrcAlbum() { return track.album(); }
     static boolean hasExternalPlayer() { return externalState != null; }
     static void selectLocalTrack(String title) {
         selectedLocalTitle = title == null ? "" : title.trim();
