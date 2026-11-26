@@ -46,23 +46,17 @@ Example LRC:
 
 The HUD shows the active line and the next line. Keybinds can be changed in Minecraft Controls.
 
-## External player bridge (companion protocol)
+## Android companion setup
 
-An optional companion process can update `lyricsflow/nowplaying.properties`. The mod checks this file every 10 game ticks (about twice per second). When the file is fresh (updated within 15 seconds), its playback position drives the LRC timeline and its title/artist appear in the HUD. If the file is missing or stale, the mod falls back to its manual in-game clock.
+1. Install the **LyricsFlow Companion** debug APK on the same Android device as Zalith.
+2. Open it and tap **Open notification access settings**.
+3. Enable notification access for LyricsFlow Companion, then return to the app.
+4. Start or resume music in a player that publishes an Android MediaSession.
+5. Launch Minecraft with this Fabric mod. The mod polls the companion's loopback endpoint and uses the reported playback position to select the matching LRC line.
 
-Example file (UTF-8 Java Properties format):
+The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread. If no valid media session is available, it falls back to the manual in-game timeline. You still need a matching `lyricsflow/current.lrc` file.
 
-    title=Song title
-    artist=Artist name
-    position_ms=12500
-    playing=true
-    updated_at_ms=1795651200000
-
-The companion must refresh `updated_at_ms` regularly and write the current playback position in milliseconds. For reliable updates, write a temporary file and atomically rename it to `nowplaying.properties`. The timestamp is Unix epoch milliseconds. This is a file-based handoff, not direct MediaSession integration; no Android permissions or media-player access are provided by the Minecraft mod.
-
-## Android notes
-
-No root, Shizuku, or separate Android app is required. The current version uses Fabric client APIs only. The Android companion that reads MediaSession and writes this bridge file, plus device-specific Zalith runtime testing, remain future work.
+Android permission is granted by the user in system settings. No root or Shizuku is required. This is an early prototype: Android background-process behavior, different music players, and the full Zalith runtime still require testing.
 
 Sodium and Indium are not required by this mod and are not modified by it.
 
