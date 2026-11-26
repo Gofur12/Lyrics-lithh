@@ -54,7 +54,7 @@ When the companion reports a new song title, the mod automatically loads `lyrics
 4. Start or resume music in a player that publishes an Android MediaSession.
 5. Launch Minecraft with this Fabric mod. The mod polls the companion's loopback endpoint and uses the reported playback position to select the matching LRC line.
 
-The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread. If no valid media session is available, it falls back to the manual in-game timeline. You need either a matching `lyricsflow/<Song Title>.lrc` file or the fallback `lyricsflow/current.lrc` file.
+The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread every 10 game ticks and interpolates the last reported playback position between polls so the HUD does not visibly jump only twice per second. Pause and seek changes are picked up on the next poll. If no valid media session is available, it falls back to the manual in-game timeline. You need either a matching `lyricsflow/<Song Title>.lrc` file or the fallback `lyricsflow/current.lrc` file.
 
 Android permission is granted by the user in system settings. No root or Shizuku is required. This is an early prototype: Android background-process behavior, different music players, and the full Zalith runtime still require testing.
 
