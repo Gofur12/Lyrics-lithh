@@ -242,6 +242,10 @@ public final class LyricsFlowClient implements ClientModInitializer {
         hudYOffset = Math.max(-100, Math.min(100, hudYOffset + amount));
         saveSettings();
     }
+    static void resetHudYOffset() {
+        hudYOffset = 0;
+        saveSettings();
+    }
     static String getCurrentLyricPreview() {
         long raw = externalState != null ? externalPositionMs(externalState) : positionMs();
         LrcTrack.Entry entry = track.current(Math.max(0L, raw - lyricOffsetMs));
