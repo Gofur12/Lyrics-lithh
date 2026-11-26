@@ -4,7 +4,7 @@ Lightweight client-side LRC lyric overlay for Minecraft Java 1.20.1, intended fo
 
 ## Status
 
-**Prototype: local LRC plus an external now-playing file bridge.** The mod can read playback metadata and position from `lyricsflow/nowplaying.properties`, allowing a separate Android companion to pass data into the HUD. This Fabric mod itself still does not access Android MediaSession, YouTube Music, YouTube, or Google OAuth. A companion app/service with the appropriate Android media-session access is not included yet.
+**Early prototype: local LRC plus an Android MediaSession companion.** The repository now includes a separate Android companion APK that requests notification-listener access, reads active media sessions, and exposes the current track to the mod through a loopback-only HTTP endpoint (`127.0.0.1:8765`). The companion does not access YouTube Music private APIs or Google OAuth; it reads only Android's active media-session metadata when the user grants access. End-to-end operation on Zalith still needs device testing.
 
 ## Build
 
@@ -13,7 +13,7 @@ Lightweight client-side LRC lyric overlay for Minecraft Java 1.20.1, intended fo
 - Fabric API 0.92.2+1.20.1
 - Java 17
 
-GitHub Actions builds the project on pushes and pull requests. Download the JAR from the successful workflow run's Artifacts section.
+GitHub Actions builds both the Fabric JAR and Android companion debug APK on pushes and pull requests. Download `lyricsflow-fabric-1.20.1` and `lyricsflow-android-companion-debug` from a successful workflow run's Artifacts section.
 
 ## Install and use
 
