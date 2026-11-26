@@ -17,9 +17,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path LYRICS_FILE = Path.of("lyricsflow", "current.lrc");
+    private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
+    private static NowPlayingBridge.State externalState;
+    private static int bridgePollTicks = 0;
     private static LrcTrack track = LrcTrack.parse("");
     private static boolean visible = true;
     private static boolean playing = false;
@@ -41,6 +45,10 @@ public final class LyricsFlowClient implements ClientModInitializer {
         registerCommands();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (++bridgePollTicks >= 10) {
+                bridgePollTicks = 0;
+                externalState = NowPlayingBridge.read(client.runDirectory.toPath().resolve(NOW_PLAYING_FILE));
+            }
             while (toggleKey.wasPressed()) visible = !visible;
             while (playPauseKey.wasPressed()) togglePlayback();
             while (reloadKey.wasPressed()) loadTrack();
@@ -51,14 +59,20 @@ public final class LyricsFlowClient implements ClientModInitializer {
             if (!visible || track.isEmpty()) return;
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.options.hudHidden) return;
-            long position = positionMs();
+            long position = externalState != null ? externalState.positionMs() : positionMs();
             LrcTrack.Entry current = track.current(position);
             LrcTrack.Entry next = track.next(position);
             int centerX = client.getWindow().getScaledWidth() / 2;
             int y = client.getWindow().getScaledHeight() - 58;
             String currentText = current == null ? "♪ LyricsFlow ready" : current.text();
             String nextText = next == null ? "" : next.text();
-            drawCentered(drawContext, client, (playing ? "▶" : "Ⅱ") + " LyricsFlow", centerX, y - 13, 0x80D8FF);
+            boolean externalPlaying = externalState != null ? externalState.playing() : playing;
+            String sourceTitle = externalState == null ? "LyricsFlow" :
+                    (externalState.title().isBlank() ? "External player" : externalState.title());
+            drawCentered(drawContext, client, (externalPlaying ? "▶ " : "Ⅱ ") + sourceTitle, centerX, y - 26, 0x80D8FF);
+            if (externalState != null && !externalState.artist().isBlank()) {
+                drawCentered(drawContext, client, externalState.artist(), centerX, y - 13, 0xC8C8C8);
+            }
             drawCentered(drawContext, client, currentText, centerX, y, 0xFFFFFF);
             if (!nextText.isEmpty()) drawCentered(drawContext, client, nextText, centerX, y + 13, 0xB8B8B8);
         });
