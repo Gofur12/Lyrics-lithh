@@ -48,11 +48,23 @@ public final class LyricsFlowScreen extends Screen {
         } else if (selectedTab == Tab.LYRICS) {
             initLyricsControls();
         } else {
-            addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
-                if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
-                else LyricsFlowClient.startPlayback();
-                clearAndInit();
-            }).dimensions(panelLeft + panelWidth / 2 - 32, panelTop + panelHeight - 34, 64, 20).build());
+            if (selectedTab == Tab.PLAYER) {
+                addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
+                    if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
+                    else LyricsFlowClient.startPlayback();
+                    clearAndInit();
+                }).dimensions(panelLeft + panelWidth / 2 - 68, panelTop + panelHeight - 34, 64, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("Stop"), button -> {
+                    LyricsFlowClient.stopPlayback();
+                    clearAndInit();
+                }).dimensions(panelLeft + panelWidth / 2 + 4, panelTop + panelHeight - 34, 48, 20).build());
+            } else {
+                addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
+                    if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
+                    else LyricsFlowClient.startPlayback();
+                    clearAndInit();
+                }).dimensions(panelLeft + panelWidth / 2 - 32, panelTop + panelHeight - 34, 64, 20).build());
+            }
         }
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
                 .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
