@@ -176,6 +176,24 @@ public final class LyricsFlowClient implements ClientModInitializer {
         playing = false;
         loadTrackForTitle(selectedLocalTitle);
     }
+
+    static void selectLocalTrack(String title, String relativeLrcFile) {
+        selectedLocalTitle = title == null ? "" : title.trim();
+        pausedAt = 0L;
+        playing = false;
+        if (relativeLrcFile == null || relativeLrcFile.isBlank()) {
+            loadTrackForTitle(selectedLocalTitle);
+            return;
+        }
+        MinecraftClient client = MinecraftClient.getInstance();
+        Path base = client.runDirectory.toPath().resolve("lyricsflow").normalize();
+        Path file = base.resolve(relativeLrcFile.replace('\\\\', '/')).normalize();
+        if (!file.startsWith(base) || !file.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".lrc")) {
+            client.inGameHud.setOverlayMessage(Text.literal("LyricsFlow: path LRC tidak valid").formatted(Formatting.RED), false);
+            return;
+        }
+        loadTrackFromFile(file);
+    }
     static void toggleOverlay() { visible = !visible; }
     static void startPlayback() { if (!playing) togglePlayback(); }
     static void pausePlayback() { if (playing) togglePlayback(); }
