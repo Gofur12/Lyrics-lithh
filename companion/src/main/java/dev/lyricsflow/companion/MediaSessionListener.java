@@ -96,7 +96,7 @@ public final class MediaSessionListener extends NotificationListenerService {
         } catch (SecurityException ignored) { }
 
         return "title=" + enc(title) + "\nartist=" + enc(artist) + "\nposition_ms=" + position
-                + "\nplaying=" + playing + "\nupdated_at_ms=" + System.currentTimeMillis() + "\n";
+                + "\nplaying=" + playing + "\nupdated_at_ms=" + (foundSession ? System.currentTimeMillis() : 0L) + "\n";
     }
 
     private static String value(String text) { return text == null ? "" : text; }
