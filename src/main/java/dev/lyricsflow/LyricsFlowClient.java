@@ -274,6 +274,35 @@ public final class LyricsFlowClient implements ClientModInitializer {
         loadTrackForTitle(state == null ? "" : state.title());
     }
 
+    private static void loadTrackFromFile(Path file) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        try {
+            if (!Files.isRegularFile(file)) {
+                track = LrcTrack.parse("");
+                client.inGameHud.setOverlayMessage(
+                        Text.literal("LyricsFlow: file LRC tidak ditemukan").formatted(Formatting.RED), false);
+                return;
+            }
+            String content = Files.readString(file, StandardCharsets.UTF_8);
+            LrcTrack loaded = LrcTrack.parse(content);
+            if (loaded.isEmpty()) {
+                track = LrcTrack.parse("");
+                client.inGameHud.setOverlayMessage(
+                        Text.literal("LyricsFlow: file LRC kosong atau formatnya tidak valid").formatted(Formatting.RED), false);
+                return;
+            }
+            track = loaded;
+            pausedAt = 0L;
+            playing = false;
+            client.inGameHud.setOverlayMessage(
+                    Text.literal("LyricsFlow: loaded " + file.getFileName()).formatted(Formatting.AQUA), false);
+        } catch (IOException exception) {
+            track = LrcTrack.parse("");
+            client.inGameHud.setOverlayMessage(
+                    Text.literal("LyricsFlow: gagal membaca file LRC").formatted(Formatting.RED), false);
+        }
+    }
+
     private static void loadTrackForTitle(String title) {
         if (title != null && !title.isBlank()) selectedLocalTitle = title.trim();
         MinecraftClient client = MinecraftClient.getInstance();
