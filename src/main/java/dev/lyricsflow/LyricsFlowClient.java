@@ -28,6 +28,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
     private static final Path SETTINGS_FILE = Path.of("lyricsflow", "settings.properties");
     private static volatile long lyricOffsetMs = 0L;
+    private static volatile int hudYOffset = 0;
     private static volatile NowPlayingBridge.State externalState;
     private static String lastExternalTitle = "";
     private static int bridgePollTicks = 0;
@@ -92,7 +93,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             LrcTrack.Entry current = track.current(position);
             LrcTrack.Entry next = track.next(position);
             int centerX = client.getWindow().getScaledWidth() / 2;
-            int y = client.getWindow().getScaledHeight() - 58;
+            int y = client.getWindow().getScaledHeight() - 58 - hudYOffset;
             String currentText = current == null ? "♪ LyricsFlow ready" : current.text();
             String nextText = next == null ? "" : next.text();
             boolean externalPlaying = externalState != null ? externalState.playing() : playing;
@@ -236,6 +237,11 @@ public final class LyricsFlowClient implements ClientModInitializer {
     }
     static void reloadLyrics() { loadTrack(); }
     static long getLyricOffsetMs() { return lyricOffsetMs; }
+    static int getHudYOffset() { return hudYOffset; }
+    static void adjustHudYOffset(int amount) {
+        hudYOffset = Math.max(-100, Math.min(100, hudYOffset + amount));
+        saveSettings();
+    }
     static String getCurrentLyricPreview() {
         long raw = externalState != null ? externalPositionMs(externalState) : positionMs();
         LrcTrack.Entry entry = track.current(Math.max(0L, raw - lyricOffsetMs));
@@ -266,6 +272,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             lyricOffsetMs = Math.max(-60000L, Math.min(60000L,
                     Long.parseLong(properties.getProperty("offset_ms", "0").trim())));
             visible = Boolean.parseBoolean(properties.getProperty("hud_visible", "true"));
+            hudYOffset = Math.max(-100, Math.min(100, Integer.parseInt(properties.getProperty("hud_y_offset", "0").trim())));
         } catch (IOException | NumberFormatException exception) {
             lyricOffsetMs = 0L;
         }
@@ -277,6 +284,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         java.util.Properties properties = new java.util.Properties();
         properties.setProperty("offset_ms", Long.toString(lyricOffsetMs));
         properties.setProperty("hud_visible", Boolean.toString(visible));
+        properties.setProperty("hud_y_offset", Integer.toString(hudYOffset));
         try {
             Files.createDirectories(file.getParent());
             try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
