@@ -17,7 +17,7 @@ public final class LyricsFlowConfigScreen extends Screen {
     @Override
     protected void init() {
         int center = width / 2;
-        int top = height / 2 - 58;
+        int top = height / 2 - 82;
         int buttonWidth = Math.min(220, width - 32);
         int left = center - buttonWidth / 2;
 
@@ -41,8 +41,18 @@ public final class LyricsFlowConfigScreen extends Screen {
             clearAndInit();
         }).dimensions(left, top + 52, buttonWidth, 20).build());
 
+        addDrawableChild(ButtonWidget.builder(Text.literal("HUD naik 5 px"), button -> {
+            LyricsFlowClient.adjustHudYOffset(5);
+            clearAndInit();
+        }).dimensions(left, top + 78, buttonWidth / 2 - 2, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("HUD turun 5 px"), button -> {
+            LyricsFlowClient.adjustHudYOffset(-5);
+            clearAndInit();
+        }).dimensions(center + 2, top + 78, buttonWidth / 2 - 2, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
-                .dimensions(left, top + 82, buttonWidth, 20).build());
+                .dimensions(left, top + 108, buttonWidth, 20).build());
     }
 
     private Text hudLabel() {
@@ -54,8 +64,8 @@ public final class LyricsFlowConfigScreen extends Screen {
         renderBackground(context);
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 88, 0xFF70C7D8);
         context.drawCenteredTextWithShadow(textRenderer,
-                "Offset saat ini: " + LyricsFlowClient.getLyricOffsetMs() + " ms",
-                width / 2, height / 2 + 48, 0xFFFFFFFF);
+                "Offset: " + LyricsFlowClient.getLyricOffsetMs() + " ms | Posisi HUD: " + LyricsFlowClient.getHudYOffset() + " px",
+                width / 2, height / 2 + 66, 0xFFFFFFFF);
         super.render(context, mouseX, mouseY, delta);
     }
 
