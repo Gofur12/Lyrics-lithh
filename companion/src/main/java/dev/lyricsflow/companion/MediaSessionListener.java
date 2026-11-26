@@ -58,15 +58,15 @@ public final class MediaSessionListener extends NotificationListenerService {
                         String[] parts = requestLine.split(" ", 3);
                         if (parts.length >= 2) path = parts[1];
                     }
-                    String body = "/nowplaying".equals(path) ? snapshot() : "Not Found\\n";
+                    String body = "/nowplaying".equals(path) ? snapshot() : "Not Found\n";
                     int status = "/nowplaying".equals(path) ? 200 : 404;
                     String reason = status == 200 ? "OK" : "Not Found";
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                     OutputStream out = client.getOutputStream();
-                    String headers = "HTTP/1.1 " + status + " " + reason + "\\r\\n"
-                            + "Content-Type: text/plain; charset=utf-8\\r\\n"
-                            + "Cache-Control: no-store\\r\\nConnection: close\\r\\nContent-Length: "
-                            + bytes.length + "\\r\\n\\r\\n";
+                    String headers = "HTTP/1.1 " + status + " " + reason + "\r\n"
+                            + "Content-Type: text/plain; charset=utf-8\r\n"
+                            + "Cache-Control: no-store\r\nConnection: close\r\nContent-Length: "
+                            + bytes.length + "\r\n\r\n";
                     out.write(headers.getBytes(StandardCharsets.US_ASCII));
                     out.write(bytes);
                     out.flush();
@@ -110,7 +110,7 @@ public final class MediaSessionListener extends NotificationListenerService {
         } catch (SecurityException ignored) { }
 
         if (selected == null || selectedState == null) {
-            return "title=\\nartist=\\nposition_ms=0\\nplaying=false\\nupdated_at_ms=0\\n";
+            return "title=\nartist=\nposition_ms=0\nplaying=false\nupdated_at_ms=0\n";
         }
 
         MediaMetadata metadata = selected.getMetadata();
@@ -123,8 +123,8 @@ public final class MediaSessionListener extends NotificationListenerService {
             if (updated > 0) position += Math.max(0L, SystemClock.elapsedRealtime() - updated);
         }
         boolean playing = status == PlaybackState.STATE_PLAYING;
-        return "title=" + enc(title) + "\\nartist=" + enc(artist) + "\\nposition_ms=" + position
-                + "\\nplaying=" + playing + "\\nupdated_at_ms=" + System.currentTimeMillis() + "\\n";
+        return "title=" + enc(title) + "\nartist=" + enc(artist) + "\nposition_ms=" + position
+                + "\nplaying=" + playing + "\nupdated_at_ms=" + System.currentTimeMillis() + "\n";
     }
 
     private static String value(String text) { return text == null ? "" : text; }
