@@ -29,6 +29,13 @@ GitHub Actions builds the project on pushes and pull requests. Download the JAR 
 | P | Start or pause lyric timeline |
 | L | Reload current.lrc |
 
+You can also use these in-game commands (including on touch-first setups with a command input):
+
+- `/lyricsflow reload`
+- `/lyricsflow toggle`
+- `/lyricsflow play`
+- `/lyricsflow pause`
+
 Example LRC:
 
     [00:00.00]First line
