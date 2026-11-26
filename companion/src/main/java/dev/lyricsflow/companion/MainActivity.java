@@ -106,8 +106,8 @@ public final class MainActivity extends Activity {
 
     private static String decode(String value) {
         try {
-            return java.net.URLDecoder.decode(value, StandardCharsets.UTF_8);
-        } catch (IllegalArgumentException exception) {
+            return java.net.URLDecoder.decode(value, "UTF-8");
+        } catch (Exception exception) {
             return value;
         }
     }
