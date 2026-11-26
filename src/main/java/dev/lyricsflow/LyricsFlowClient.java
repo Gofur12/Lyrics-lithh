@@ -87,7 +87,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         try {
             Files.createDirectories(file.getParent());
             if (!Files.exists(file)) Files.writeString(file,
-                    "[00:00.00]Put your synced lyrics here\\n[00:05.00]Press P to start or pause\\n",
+                    "[00:00.00]Put your synced lyrics here\n[00:05.00]Press P to start or pause\n",
                     StandardCharsets.UTF_8);
             track = LrcTrack.parse(Files.readString(file, StandardCharsets.UTF_8));
             pausedAt = 0;
