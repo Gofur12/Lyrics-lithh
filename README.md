@@ -12,7 +12,7 @@ This is an early prototype. Working features include:
 - Manual internal lyric timeline.
 - Optional playback metadata import from a properties file.
 
-**Not implemented:** actual audio playback, YouTube playback/login, Spotify playback/login, Android music-library browsing, or automatic Android media-session access. The YouTube, Spotify, Musik HP, and App tabs are interface placeholders; they do not currently connect to those services. A Fabric JAR alone cannot provide a native Android WebView or Android notification-listener service.
+**Not implemented:** actual audio playback, YouTube playback/login, Spotify playback/login, Android music-library browsing, or automatic Android media-session access. The YouTube and Spotify tabs now provide song/artist search fields and copy official search links to the clipboard for opening in the Android app or browser. They do not embed or play audio inside Minecraft. The Musik HP and App tabs remain interface placeholders. A Fabric JAR alone cannot provide a native Android WebView or Android notification-listener service.
 
 ## Build
 
@@ -39,7 +39,7 @@ GitHub Actions builds the Fabric JAR. Download the `lyricsflow-fabric-1.20.1` ar
 | L | Reload lyrics |
 | H | Open the touch-friendly menu |
 
-The menu includes overlay, timeline, reload, and timing-offset controls. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and limited to ±60,000 ms.
+The menu includes overlay, timeline, reload, and timing-offset controls. The YouTube and Spotify tabs accept a song or artist query and copy a search link that can be pasted into the corresponding Android app or browser. This is a search handoff only, not in-game playback or account login. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and limited to ±60,000 ms.
 
 Commands:
 
