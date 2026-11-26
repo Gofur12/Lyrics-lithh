@@ -1,9 +1,11 @@
 package dev.lyricsflow.companion;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.service.notification.NotificationListenerService;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -11,8 +13,10 @@ import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +39,7 @@ public final class MainActivity extends Activity {
         layout.addView(title);
 
         TextView info = new TextView(this);
-        info.setText("Enable notification access so LyricsFlow can read the active music session. The local bridge listens only on 127.0.0.1:8765.");
+        info.setText("1. Enable LyricsFlow Media Session Access.\\n2. Play music in Spotify or YouTube.\\n3. Return here and tap Test music connection.\\nLocal bridge: 127.0.0.1:8765");
         info.setTextSize(16);
         info.setPadding(0, 20, 0, 20);
         layout.addView(info);
@@ -51,53 +55,80 @@ public final class MainActivity extends Activity {
         layout.addView(test);
 
         status = new TextView(this);
-        status.setText("Connection not tested yet.");
+        status.setText("Ready. Start music, then test the connection.");
         status.setTextSize(14);
         status.setPadding(0, 16, 0, 16);
         layout.addView(status);
-
-        TextView steps = new TextView(this);
-        steps.setText("After enabling access, return to this app and tap Test music connection. Start playing music first. Then launch Minecraft. Keep this app installed; no account login is needed.");
-        steps.setTextSize(14);
-        layout.addView(steps);
 
         setContentView(layout);
     }
 
     private void testBridge() {
-        status.setText("Checking local music session...");
+        status.setText("Reconnecting to Android media access...");
         checker.execute(() -> {
-            String result;
-            HttpURLConnection connection = null;
+            String result = "";
             try {
-                connection = (HttpURLConnection) new URL("http://127.0.0.1:8765/nowplaying").openConnection();
-                connection.setConnectTimeout(1000);
-                connection.setReadTimeout(1000);
-                connection.setUseCaches(false);
-                if (connection.getResponseCode() != 200) {
-                    result = "Bridge responded, but the endpoint is unavailable. Reopen the app or re-enable Notification Access.";
-                } else {
-                    String title = "";
-                    String artist = "";
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            if (line.startsWith("title=")) title = decode(line.substring(6));
-                            else if (line.startsWith("artist=")) artist = decode(line.substring(7));
+                // Ask Android to rebind the notification listener after access was granted.
+                NotificationListenerService.requestRebind(
+                        new ComponentName(this, MediaSessionListener.class));
+
+                for (int attempt = 1; attempt <= 10; attempt++) {
+                    HttpURLConnection connection = null;
+                    try {
+                        connection = (HttpURLConnection) new URL(
+                                "http://127.0.0.1:8765/nowplaying").openConnection();
+                        connection.setConnectTimeout(700);
+                        connection.setReadTimeout(1000);
+                        connection.setUseCaches(false);
+                        if (connection.getResponseCode() == 200) {
+                            String title = "";
+                            String artist = "";
+                            String playing = "false";
+                            try (BufferedReader reader = new BufferedReader(
+                                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    int split = line.indexOf('=');
+                                    if (split < 0) continue;
+                                    String key = line.substring(0, split);
+                                    String value = line.substring(split + 1);
+                                    if ("title".equals(key)) title = decode(value);
+                                    else if ("artist".equals(key)) artist = decode(value);
+                                    else if ("playing".equals(key)) playing = value;
+                                }
+                            }
+                            if (!title.isEmpty()) {
+                                result = "Connected: " + title
+                                        + (artist.isEmpty() ? "" : " — " + artist)
+                                        + (Boolean.parseBoolean(playing) ? "\\nPlayback: PLAYING" : "\\nPlayback: PAUSED");
+                            } else {
+                                result = "Bridge is running, but Android did not expose an active song. Keep Spotify/YouTube playing and try again.";
+                            }
+                            break;
+                        } else {
+                            result = "Local bridge responded with HTTP " + connection.getResponseCode() + ".";
                         }
+                    } catch (ConnectException exception) {
+                        result = "Local bridge is not running yet. Android has been asked to reconnect the media listener. Check Notification Access is ON, then try again.";
+                    } catch (Exception exception) {
+                        result = "Connection error: " + exception.getClass().getSimpleName()
+                                + (exception.getMessage() == null ? "" : " — " + exception.getMessage());
+                    } finally {
+                        if (connection != null) connection.disconnect();
                     }
-                    if (title.isEmpty()) {
-                        result = "Bridge is running, but no active music session was found. Start playback in a media app that exposes Android MediaSession.";
-                    } else {
-                        result = "Connected: " + title + (artist.isEmpty() ? "" : " — " + artist);
+                    if (result.startsWith("Connected:") || result.startsWith("Bridge is running")
+                            || result.startsWith("Connection error:")) break;
+                    if (attempt < 10) {
+                        try { Thread.sleep(500); }
+                        catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            result = "Connection test cancelled.";
+                            break;
+                        }
                     }
                 }
             } catch (Exception exception) {
-                result = "Not connected. Enable Notification Access, start music, then reopen this app. (" 
-                        + exception.getClass().getSimpleName() + ")";
-            } finally {
-                if (connection != null) connection.disconnect();
+                result = "Unable to request Android media listener: " + exception.getClass().getSimpleName();
             }
             final String message = result;
             runOnUiThread(() -> status.setText(message));
