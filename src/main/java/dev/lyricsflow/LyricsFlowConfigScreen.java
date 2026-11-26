@@ -51,8 +51,13 @@ public final class LyricsFlowConfigScreen extends Screen {
             clearAndInit();
         }).dimensions(center + 2, top + 78, buttonWidth / 2 - 2, 20).build());
 
+        addDrawableChild(ButtonWidget.builder(Text.literal("Reset posisi HUD"), button -> {
+            LyricsFlowClient.resetHudYOffset();
+            clearAndInit();
+        }).dimensions(left, top + 104, buttonWidth, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
-                .dimensions(left, top + 108, buttonWidth, 20).build());
+                .dimensions(left, top + 130, buttonWidth, 20).build());
     }
 
     private Text hudLabel() {
