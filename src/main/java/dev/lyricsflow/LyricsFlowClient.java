@@ -202,6 +202,12 @@ public final class LyricsFlowClient implements ClientModInitializer {
         pausedAt = 0L;
         startedAt = 0L;
     }
+    static void seekBy(long amountMs) {
+        if (externalState != null) return;
+        long next = Math.max(0L, positionMs() + amountMs);
+        if (playing) startedAt = System.currentTimeMillis() - next;
+        else pausedAt = next;
+    }
     static void reloadLyrics() { loadTrack(); }
     static long getLyricOffsetMs() { return lyricOffsetMs; }
     static String getCurrentLyricPreview() {
