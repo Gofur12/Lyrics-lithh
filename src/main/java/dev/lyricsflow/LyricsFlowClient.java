@@ -40,6 +40,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
     private static LrcTrack track = LrcTrack.parse("");
     private static boolean visible = true;
     private static boolean playing = false;
+    private static String selectedLocalTitle = "";
     private static long startedAt = 0L;
     private static long pausedAt = 0L;
     private static KeyBinding toggleKey, playPauseKey, reloadKey, menuKey;
@@ -159,6 +160,13 @@ public final class LyricsFlowClient implements ClientModInitializer {
 
     static boolean isVisible() { return visible; }
     static boolean isPlaying() { return playing; }
+    static String getSelectedLocalTitle() { return selectedLocalTitle; }
+    static void selectLocalTrack(String title) {
+        selectedLocalTitle = title == null ? "" : title.trim();
+        pausedAt = 0L;
+        playing = false;
+        loadTrackForTitle(selectedLocalTitle);
+    }
     static void toggleOverlay() { visible = !visible; }
     static void startPlayback() { if (!playing) togglePlayback(); }
     static void pausePlayback() { if (playing) togglePlayback(); }
@@ -230,6 +238,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
     }
 
     private static void loadTrackForTitle(String title) {
+        if (title != null && !title.isBlank()) selectedLocalTitle = title.trim();
         MinecraftClient client = MinecraftClient.getInstance();
         Path gameDir = client.runDirectory.toPath();
         Path fallback = gameDir.resolve(LYRICS_FILE);
