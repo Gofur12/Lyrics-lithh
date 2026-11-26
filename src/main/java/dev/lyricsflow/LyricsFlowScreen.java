@@ -19,7 +19,8 @@ public final class LyricsFlowScreen extends Screen {
     private int panelLeft, panelTop, panelWidth, panelHeight;
     private int selectedPlaylist;
     private int selectedTrack;
-    private TextFieldWidget playlistInput;\n    private TextFieldWidget serviceSearchInput;
+    private TextFieldWidget playlistInput;
+    private TextFieldWidget serviceSearchInput;
 
     public LyricsFlowScreen() { super(Text.literal("LyricsFlow")); }
 
