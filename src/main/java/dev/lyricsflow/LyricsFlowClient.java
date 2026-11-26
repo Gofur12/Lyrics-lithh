@@ -172,6 +172,16 @@ public final class LyricsFlowClient implements ClientModInitializer {
     static void pausePlayback() { if (playing) togglePlayback(); }
     static void reloadLyrics() { loadTrack(); }
     static long getLyricOffsetMs() { return lyricOffsetMs; }
+    static String getCurrentLyricPreview() {
+        long raw = externalState != null ? externalPositionMs(externalState) : positionMs();
+        LrcTrack.Entry entry = track.current(Math.max(0L, raw - lyricOffsetMs));
+        return entry == null ? "—" : entry.text();
+    }
+    static String getNextLyricPreview() {
+        long raw = externalState != null ? externalPositionMs(externalState) : positionMs();
+        LrcTrack.Entry entry = track.next(Math.max(0L, raw - lyricOffsetMs));
+        return entry == null ? "—" : entry.text();
+    }
     static void adjustLyricOffset(long amountMs) {
         setLyricOffset(Math.max(-60000L, Math.min(60000L, lyricOffsetMs + amountMs)));
     }
