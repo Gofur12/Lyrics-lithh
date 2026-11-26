@@ -197,6 +197,11 @@ public final class LyricsFlowClient implements ClientModInitializer {
     static void toggleOverlay() { visible = !visible; }
     static void startPlayback() { if (!playing) togglePlayback(); }
     static void pausePlayback() { if (playing) togglePlayback(); }
+    static void stopPlayback() {
+        playing = false;
+        pausedAt = 0L;
+        startedAt = 0L;
+    }
     static void reloadLyrics() { loadTrack(); }
     static long getLyricOffsetMs() { return lyricOffsetMs; }
     static String getCurrentLyricPreview() {
