@@ -21,7 +21,7 @@ GitHub Actions builds both the Fabric JAR and Android companion debug APK on pus
 2. Put the JAR in the instance's mods folder.
 3. Launch Minecraft 1.20.1 with Fabric.
 4. On first launch the mod creates a lyricsflow/current.lrc file in the game directory.
-5. Replace that file with an LRC lyric file.
+5. Replace that file with an LRC lyric file. You can also add one LRC file per song, named after the exact track title (for example, `Never Gonna Give You Up.lrc`) in the same `lyricsflow` folder.
 
 | Key | Action |
 | --- | --- |
@@ -44,7 +44,7 @@ Example LRC:
     [00:04.50]Second line
     [00:09.20]Third line
 
-The HUD shows the active line and the next line. Keybinds can be changed in Minecraft Controls.
+When the companion reports a new song title, the mod automatically loads `lyricsflow/<Song Title>.lrc` if that file exists; otherwise it uses `lyricsflow/current.lrc`. Keep filenames based on the track title, replacing characters that are invalid in filenames with underscores. The HUD shows the active line and the next line. Keybinds can be changed in Minecraft Controls.
 
 ## Android companion setup
 
@@ -54,7 +54,7 @@ The HUD shows the active line and the next line. Keybinds can be changed in Mine
 4. Start or resume music in a player that publishes an Android MediaSession.
 5. Launch Minecraft with this Fabric mod. The mod polls the companion's loopback endpoint and uses the reported playback position to select the matching LRC line.
 
-The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread. If no valid media session is available, it falls back to the manual in-game timeline. You still need a matching `lyricsflow/current.lrc` file.
+The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread. If no valid media session is available, it falls back to the manual in-game timeline. You need either a matching `lyricsflow/<Song Title>.lrc` file or the fallback `lyricsflow/current.lrc` file.
 
 Android permission is granted by the user in system settings. No root or Shizuku is required. This is an early prototype: Android background-process behavior, different music players, and the full Zalith runtime still require testing.
 
