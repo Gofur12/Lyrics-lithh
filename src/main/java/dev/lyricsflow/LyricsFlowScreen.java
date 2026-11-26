@@ -45,6 +45,8 @@ public final class LyricsFlowScreen extends Screen {
 
         if (selectedTab == Tab.PLAYLIST) {
             initPlaylistControls();
+        } else if (selectedTab == Tab.LYRICS) {
+            initLyricsControls();
         } else {
             addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
                 if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
@@ -54,6 +56,28 @@ public final class LyricsFlowScreen extends Screen {
         }
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
                 .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
+    }
+
+    private void initLyricsControls() {
+        int x = panelLeft + 12;
+        int y = panelTop + 154;
+        int gap = 4;
+        int buttonWidth = (panelWidth - 24 - gap * 2) / 3;
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("-100 ms"), b -> {
+            LyricsFlowClient.adjustLyricOffset(-100L);
+            clearAndInit();
+        }).dimensions(x, y, buttonWidth, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("+100 ms"), b -> {
+            LyricsFlowClient.adjustLyricOffset(100L);
+            clearAndInit();
+        }).dimensions(x + buttonWidth + gap, y, buttonWidth, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("Reset"), b -> {
+            LyricsFlowClient.resetLyricOffset();
+            clearAndInit();
+        }).dimensions(x + (buttonWidth + gap) * 2, y, buttonWidth, 20).build());
     }
 
     private void initPlaylistControls() {
@@ -165,6 +189,7 @@ public final class LyricsFlowScreen extends Screen {
         context.drawCenteredTextWithShadow(textRenderer, "Lirik tersinkronisasi LRC", panelLeft + panelWidth / 2, y + 24, 0xFFFFFFFF);
         context.drawCenteredTextWithShadow(textRenderer, "Letakkan file .lrc di folder lyricsflow", panelLeft + panelWidth / 2, y + 44, 0xFFB0B8C5);
         context.drawCenteredTextWithShadow(textRenderer, "Offset: " + LyricsFlowClient.getLyricOffsetMs() + " ms", panelLeft + panelWidth / 2, y + 64, 0xFF70C7D8);
+        context.drawCenteredTextWithShadow(textRenderer, "Atur sinkronisasi dengan tombol di bawah", panelLeft + panelWidth / 2, y + 80, 0xFFB0B8C5);
     }
 
     private void renderPlaylist(DrawContext context, int y) {
