@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path LYRICS_FILE = Path.of("lyricsflow", "current.lrc");
     private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
-    private static NowPlayingBridge.State externalState;
+    private static volatile NowPlayingBridge.State externalState;
+    private static String lastExternalTitle = "";
+    private static Path loadedLyricsPath;
     private static int bridgePollTicks = 0;
     private static final AtomicBoolean bridgeRequestInFlight = new AtomicBoolean(false);
     private static final ExecutorService bridgeExecutor = Executors.newSingleThreadExecutor(r -> {
@@ -64,6 +66,11 @@ public final class LyricsFlowClient implements ClientModInitializer {
                         }
                     });
                 }
+            }
+            NowPlayingBridge.State state = externalState;
+            if (state != null && !state.title().isBlank() && !state.title().equals(lastExternalTitle)) {
+                lastExternalTitle = state.title();
+                loadTrackForTitle(state.title());
             }
             while (toggleKey.wasPressed()) visible = !visible;
             while (playPauseKey.wasPressed()) togglePlayback();
@@ -165,7 +172,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             pausedAt = 0;
             playing = false;
             client.execute(() -> client.inGameHud.setOverlayMessage(
-                    Text.literal("LyricsFlow: LRC loaded").formatted(Formatting.AQUA), false));
+                    Text.literal("LyricsFlow: loaded " + file.getFileName()).formatted(Formatting.AQUA), false));
         } catch (IOException exception) {
             track = LrcTrack.parse("");
             client.execute(() -> client.inGameHud.setOverlayMessage(
