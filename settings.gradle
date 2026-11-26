@@ -6,5 +6,4 @@ pluginManagement {
         mavenCentral()
     }
 }
-rootProject.name = "LyricsFlow-Android"
-include(":companion")
+rootProject.name = "LyricsFlow-Fabric"
