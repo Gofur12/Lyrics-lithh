@@ -65,8 +65,8 @@ public final class NowPlayingBridge {
             title = URLDecoder.decode(title, StandardCharsets.UTF_8);
             artist = URLDecoder.decode(artist, StandardCharsets.UTF_8);
         }
-        return new State(title, artist, position, playing);
+        return new State(title, artist, position, playing, now);
     }
 
-    public record State(String title, String artist, long positionMs, boolean playing) {}
+    public record State(String title, String artist, long positionMs, boolean playing, long sampledAtMs) {}
 }
