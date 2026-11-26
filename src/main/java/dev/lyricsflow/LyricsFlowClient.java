@@ -17,12 +17,21 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path LYRICS_FILE = Path.of("lyricsflow", "current.lrc");
     private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
     private static NowPlayingBridge.State externalState;
     private static int bridgePollTicks = 0;
+    private static final AtomicBoolean bridgeRequestInFlight = new AtomicBoolean(false);
+    private static final ExecutorService bridgeExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "LyricsFlow-Bridge");
+        thread.setDaemon(true);
+        return thread;
+    });
     private static LrcTrack track = LrcTrack.parse("");
     private static boolean visible = true;
     private static boolean playing = false;
@@ -46,7 +55,15 @@ public final class LyricsFlowClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (++bridgePollTicks >= 10) {
                 bridgePollTicks = 0;
-                externalState = NowPlayingBridge.read(client.runDirectory.toPath().resolve(NOW_PLAYING_FILE));
+                if (bridgeRequestInFlight.compareAndSet(false, true)) {
+                    bridgeExecutor.execute(() -> {
+                        try {
+                            externalState = NowPlayingBridge.read(client.runDirectory.toPath().resolve(NOW_PLAYING_FILE));
+                        } finally {
+                            bridgeRequestInFlight.set(false);
+                        }
+                    });
+                }
             }
             while (toggleKey.wasPressed()) visible = !visible;
             while (playPauseKey.wasPressed()) togglePlayback();
