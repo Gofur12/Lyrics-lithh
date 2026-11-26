@@ -1,10 +1,18 @@
-# LyricsFlow Android — Fabric 1.20.1
+# LyricsFlow — Fabric 1.20.1 (Android / Zalith)
 
-Lightweight client-side LRC lyric overlay for Minecraft Java 1.20.1, intended for Android Java launchers such as Zalith Launcher 2.
+Client-side LRC lyric overlay and touch-friendly playlist interface for Minecraft Java 1.20.1. Designed to run as **one Fabric JAR** in Android Java launchers such as Zalith Launcher 2.
 
-## Status
+## Current status
 
-**Early prototype: local LRC plus an Android MediaSession companion.** The repository now includes a separate Android companion APK that requests notification-listener access, reads active media sessions, and exposes the current track to the mod through a loopback-only HTTP endpoint (`127.0.0.1:8765`). The companion does not access YouTube Music private APIs or Google OAuth; it reads only Android's active media-session metadata when the user grants access. End-to-end operation on Zalith still needs device testing.
+This is an early prototype. Working features include:
+
+- LRC parsing and an in-game lyric HUD.
+- Touch-friendly menu and lyric timing offset controls.
+- Local playlist metadata (playlist names and track-title entries).
+- Manual internal lyric timeline.
+- Optional playback metadata import from a properties file.
+
+**Not implemented:** actual audio playback, YouTube playback/login, Spotify playback/login, Android music-library browsing, or automatic Android media-session access. The YouTube, Spotify, Musik HP, and App tabs are interface placeholders; they do not currently connect to those services. A Fabric JAR alone cannot provide a native Android WebView or Android notification-listener service.
 
 ## Build
 
@@ -12,34 +20,37 @@ Lightweight client-side LRC lyric overlay for Minecraft Java 1.20.1, intended fo
 - Fabric Loader 0.15.11
 - Fabric API 0.92.2+1.20.1
 - Java 17
+- Gradle 8.7
 
-GitHub Actions builds both the Fabric JAR and Android companion debug APK on pushes and pull requests. Download `lyricsflow-fabric-1.20.1` and `lyricsflow-android-companion-debug` from a successful workflow run's Artifacts section.
+GitHub Actions builds the Fabric JAR. Download the `lyricsflow-fabric-1.20.1` artifact from the workflow run's **Artifacts** section.
 
 ## Install and use
 
-1. Build the project or download the JAR artifact from GitHub Actions.
-2. Put the JAR in the instance's mods folder.
+1. Download the Fabric JAR artifact.
+2. Put the JAR in the Minecraft instance's `mods` folder.
 3. Launch Minecraft 1.20.1 with Fabric.
-4. On first launch the mod creates a lyricsflow/current.lrc file in the game directory.
-5. Replace that file with an LRC lyric file. You can also add one LRC file per song, named after the exact track title (for example, `Never Gonna Give You Up.lrc`) in the same `lyricsflow` folder.
+4. On first launch, the mod creates `lyricsflow/current.lrc` in the game directory.
+5. Replace it with an LRC file. For a song-specific file, put `<Song Title>.lrc` in the same `lyricsflow` folder.
 
 | Key | Action |
 | --- | --- |
 | O | Show or hide lyrics |
-| P | Start or pause lyric timeline |
-| L | Reload current.lrc |
-| H | Open touch-friendly control menu |
+| P | Start or pause the internal lyric timeline |
+| L | Reload lyrics |
+| H | Open the touch-friendly menu |
 
-Press **H** to open the touch-friendly menu with large buttons for overlay visibility, timeline start/pause, LRC reload, and lyric timing adjustment. Use **-100 ms** or **+100 ms** to fine-tune sync, or reset the offset. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and is limited to ±60,000 ms. You can also use these in-game commands (including on touch-first setups with a command input):
+The menu includes overlay, timeline, reload, and timing-offset controls. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and limited to ±60,000 ms.
+
+Commands:
 
 - `/lyricsflow reload`
 - `/lyricsflow toggle`
 - `/lyricsflow play`
 - `/lyricsflow pause`
-- `/lyricsflow menu` — open the touch control screen
-- `/lyricsflow offset 500` — delay lyric timing by 500 ms
-- `/lyricsflow offset -500` — advance lyric timing by 500 ms
-- `/lyricsflow offset reset` — reset timing offset to 0 ms
+- `/lyricsflow menu`
+- `/lyricsflow offset 500`
+- `/lyricsflow offset -500`
+- `/lyricsflow offset reset`
 
 Example LRC:
 
@@ -47,21 +58,25 @@ Example LRC:
     [00:04.50]Second line
     [00:09.20]Third line
 
-When the companion reports a new song title, the mod automatically loads `lyricsflow/<Song Title>.lrc` if that file exists; otherwise it uses `lyricsflow/current.lrc`. Keep filenames based on the track title, replacing characters that are invalid in filenames with underscores. The HUD shows the active line and the next line. Keybinds can be changed in Minecraft Controls.
+## Optional playback metadata file
 
-## Android companion setup
+The mod can read `lyricsflow/nowplaying.properties`. This is only a metadata input; it does not play audio or control another app. A separate tool would need to keep this file updated.
 
-1. Install the **LyricsFlow Companion** debug APK on the same Android device as Zalith.
-2. Open it and tap **Open notification access settings**.
-3. Enable notification access for LyricsFlow Companion, then return to the app.
-4. Start or resume music in a player that publishes an Android MediaSession.
-5. Launch Minecraft with this Fabric mod. The mod polls the companion's loopback endpoint and uses the reported playback position to select the matching LRC line.
+Example contents:
 
-The companion binds only to `127.0.0.1:8765`; it is not intended to be reachable from other devices on the network. The mod polls off the Minecraft render thread every 10 game ticks and interpolates the last reported playback position between polls so the HUD does not visibly jump only twice per second. Pause and seek changes are picked up on the next poll. If no valid media session is available, it falls back to the manual in-game timeline. You need either a matching `lyricsflow/<Song Title>.lrc` file or the fallback `lyricsflow/current.lrc` file.
+    title=Song Title
+    artist=Artist Name
+    position_ms=12500
+    playing=true
+    updated_at_ms=1795698000000
 
-Android permission is granted by the user in system settings. No root or Shizuku is required. This is an early prototype: Android background-process behavior, different music players, and the full Zalith runtime still require testing.
+`updated_at_ms` must be the current Unix time in milliseconds and refreshed at least every 15 seconds. The mod checks the file twice per second. When a fresh title is detected, it tries to load `lyricsflow/Song Title.lrc`; if that file is missing, it uses `lyricsflow/current.lrc`. Invalid or stale metadata is ignored.
 
-Sodium and Indium are not required by this mod and are not modified by it.
+## Playlist notes
+
+Playlists currently store track-title entries only. Selecting a track loads its matching LRC file (or the fallback `current.lrc`). Playlist controls do not start audio playback.
+
+Sodium and Indium are not required and are not modified by this mod.
 
 ## License
 
