@@ -3,6 +3,8 @@ package dev.lyricsflow;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -34,6 +36,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         reloadKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.lyricsflow.reload", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.lyricsflow"));
         loadTrack();
+        registerCommands();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggleKey.wasPressed()) visible = !visible;
@@ -56,6 +59,32 @@ public final class LyricsFlowClient implements ClientModInitializer {
             drawCentered(drawContext, client, currentText, centerX, y, 0xFFFFFF);
             if (!nextText.isEmpty()) drawCentered(drawContext, client, nextText, centerX, y + 13, 0xB8B8B8);
         });
+    }
+
+
+    private static void registerCommands() {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+                dispatcher.register(literal("lyricsflow")
+                        .then(literal("reload").executes(context -> {
+                            loadTrack();
+                            context.getSource().sendFeedback(Text.literal("LyricsFlow: LRC reloaded"));
+                            return 1;
+                        }))
+                        .then(literal("toggle").executes(context -> {
+                            visible = !visible;
+                            context.getSource().sendFeedback(Text.literal("LyricsFlow overlay: " + (visible ? "shown" : "hidden")));
+                            return 1;
+                        }))
+                        .then(literal("play").executes(context -> {
+                            if (!playing) togglePlayback();
+                            context.getSource().sendFeedback(Text.literal("LyricsFlow timeline started"));
+                            return 1;
+                        }))
+                        .then(literal("pause").executes(context -> {
+                            if (playing) togglePlayback();
+                            context.getSource().sendFeedback(Text.literal("LyricsFlow timeline paused"));
+                            return 1;
+                        }))));
     }
 
     private static void drawCentered(net.minecraft.client.gui.DrawContext context,
