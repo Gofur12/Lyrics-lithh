@@ -191,10 +191,14 @@ public final class LyricsFlowScreen extends Screen {
     }
 
     private void renderLyrics(DrawContext context, int y) {
-        context.drawCenteredTextWithShadow(textRenderer, "Lirik tersinkronisasi LRC", panelLeft + panelWidth / 2, y + 24, 0xFFFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, "Letakkan file .lrc di folder lyricsflow", panelLeft + panelWidth / 2, y + 44, 0xFFB0B8C5);
-        context.drawCenteredTextWithShadow(textRenderer, "Offset: " + LyricsFlowClient.getLyricOffsetMs() + " ms", panelLeft + panelWidth / 2, y + 64, 0xFF70C7D8);
-        context.drawCenteredTextWithShadow(textRenderer, "Atur sinkronisasi dengan tombol di bawah", panelLeft + panelWidth / 2, y + 80, 0xFFB0B8C5);
+        int left = panelLeft + 20;
+        int maxWidth = panelWidth - 40;
+        context.drawTextWithShadow(textRenderer, "SEKARANG", left, y + 10, 0xFF70C7D8);
+        context.drawTextWithShadow(textRenderer, trim(LyricsFlowClient.getCurrentLyricPreview(), 48), left, y + 24, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, "BERIKUTNYA", left, y + 43, 0xFF70C7D8);
+        context.drawTextWithShadow(textRenderer, trim(LyricsFlowClient.getNextLyricPreview(), 48), left, y + 57, 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer, "Offset: " + LyricsFlowClient.getLyricOffsetMs() + " ms", left, y + 77, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, "File: lyricsflow/current.lrc", left, y + 92, 0xFF8995A7);
     }
 
     private void renderPlaylist(DrawContext context, int y) {
