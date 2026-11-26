@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -24,6 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path LYRICS_FILE = Path.of("lyricsflow", "current.lrc");
     private static final Path NOW_PLAYING_FILE = Path.of("lyricsflow", "nowplaying.properties");
+    private static final Path SETTINGS_FILE = Path.of("lyricsflow", "settings.properties");
+    private static volatile long lyricOffsetMs = 0L;
     private static volatile NowPlayingBridge.State externalState;
     private static String lastExternalTitle = "";
     private static int bridgePollTicks = 0;
@@ -50,6 +54,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
                 "key.lyricsflow.reload", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.lyricsflow"));
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.lyricsflow.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.lyricsflow"));
+        loadSettings();
         loadTrack();
         registerCommands();
 
@@ -81,7 +86,8 @@ public final class LyricsFlowClient implements ClientModInitializer {
             if (!visible || track.isEmpty()) return;
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.options.hudHidden) return;
-            long position = externalState != null ? externalPositionMs(externalState) : positionMs();
+            long rawPosition = externalState != null ? externalPositionMs(externalState) : positionMs();
+            long position = Math.max(0L, rawPosition - lyricOffsetMs);
             LrcTrack.Entry current = track.current(position);
             LrcTrack.Entry next = track.next(position);
             int centerX = client.getWindow().getScaledWidth() / 2;
@@ -123,7 +129,21 @@ public final class LyricsFlowClient implements ClientModInitializer {
                             if (playing) togglePlayback();
                             context.getSource().sendFeedback(Text.literal("LyricsFlow timeline paused"));
                             return 1;
-                        })).then(literal("menu").executes(context -> {
+                        }))
+                        .then(literal("offset")
+                                .then(argument("milliseconds", LongArgumentType.longArg(-60000L, 60000L))
+                                        .executes(context -> {
+                                            setLyricOffset(LongArgumentType.getLong(context, "milliseconds"));
+                                            context.getSource().sendFeedback(Text.literal(
+                                                    "LyricsFlow offset: " + lyricOffsetMs + " ms"));
+                                            return 1;
+                                        }))
+                                .then(literal("reset").executes(context -> {
+                                    setLyricOffset(0L);
+                                    context.getSource().sendFeedback(Text.literal("LyricsFlow offset reset to 0 ms"));
+                                    return 1;
+                                })))
+                        .then(literal("menu").executes(context -> {
                             context.getSource().getClient().setScreen(new LyricsFlowScreen());
                             return 1;
                         }))));
@@ -143,6 +163,46 @@ public final class LyricsFlowClient implements ClientModInitializer {
     static void startPlayback() { if (!playing) togglePlayback(); }
     static void pausePlayback() { if (playing) togglePlayback(); }
     static void reloadLyrics() { loadTrack(); }
+    static long getLyricOffsetMs() { return lyricOffsetMs; }
+    static void adjustLyricOffset(long amountMs) {
+        setLyricOffset(Math.max(-60000L, Math.min(60000L, lyricOffsetMs + amountMs)));
+    }
+    static void resetLyricOffset() { setLyricOffset(0L); }
+
+    private static void setLyricOffset(long offsetMs) {
+        lyricOffsetMs = Math.max(-60000L, Math.min(60000L, offsetMs));
+        saveSettings();
+    }
+
+    private static void loadSettings() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        Path file = client.runDirectory.toPath().resolve(SETTINGS_FILE);
+        if (!Files.isRegularFile(file)) return;
+        java.util.Properties properties = new java.util.Properties();
+        try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+            lyricOffsetMs = Math.max(-60000L, Math.min(60000L,
+                    Long.parseLong(properties.getProperty("offset_ms", "0").trim())));
+        } catch (IOException | NumberFormatException exception) {
+            lyricOffsetMs = 0L;
+        }
+    }
+
+    private static void saveSettings() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        Path file = client.runDirectory.toPath().resolve(SETTINGS_FILE);
+        java.util.Properties properties = new java.util.Properties();
+        properties.setProperty("offset_ms", Long.toString(lyricOffsetMs));
+        try {
+            Files.createDirectories(file.getParent());
+            try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                properties.store(writer, "LyricsFlow settings");
+            }
+        } catch (IOException exception) {
+            client.execute(() -> client.inGameHud.setOverlayMessage(
+                    Text.literal("LyricsFlow: cannot save settings").formatted(Formatting.RED), false));
+        }
+    }
 
     private static void togglePlayback() {
         long now = System.currentTimeMillis();
