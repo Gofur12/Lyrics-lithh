@@ -130,6 +130,20 @@ public final class LyricsFlowClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal("LyricsFlow timeline paused"));
                             return 1;
                         }))
+                        .then(literal("seek")
+                                .then(argument("milliseconds", LongArgumentType.longArg(0L, 3600000L))
+                                        .executes(context -> {
+                                            long target = LongArgumentType.getLong(context, "milliseconds");
+                                            if (externalState != null) {
+                                                context.getSource().sendFeedback(Text.literal(
+                                                        "LyricsFlow: seek eksternal belum didukung oleh bridge."));
+                                            } else {
+                                                seekTo(target);
+                                                context.getSource().sendFeedback(Text.literal(
+                                                        "LyricsFlow timeline: " + target + " ms"));
+                                            }
+                                            return 1;
+                                        })))
                         .then(literal("offset")
                                 .then(argument("milliseconds", LongArgumentType.longArg(-60000L, 60000L))
                                         .executes(context -> {
@@ -213,7 +227,10 @@ public final class LyricsFlowClient implements ClientModInitializer {
     }
     static void seekBy(long amountMs) {
         if (externalState != null) return;
-        long next = Math.max(0L, positionMs() + amountMs);
+        seekTo(Math.max(0L, positionMs() + amountMs));
+    }
+    private static void seekTo(long targetMs) {
+        long next = Math.max(0L, Math.min(3600000L, targetMs));
         if (playing) startedAt = System.currentTimeMillis() - next;
         else pausedAt = next;
     }
