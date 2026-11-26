@@ -147,6 +147,8 @@ public final class LyricsFlowScreen extends Screen {
                 selectedTrack = Math.floorMod(selectedTrack, p.tracks.size());
                 PlaylistStore.Track track = p.tracks.get(selectedTrack);
                 LyricsFlowClient.selectLocalTrack(track.title, track.lrcFile);
+                selectedTab = Tab.PLAYER;
+                clearAndInit();
             }
         }).dimensions(x + third + gap, y + 96, third, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Lagu ›"), b -> {
