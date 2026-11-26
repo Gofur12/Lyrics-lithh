@@ -61,23 +61,28 @@ public final class LyricsFlowScreen extends Screen {
     private void initLyricsControls() {
         int x = panelLeft + 12;
         int y = panelTop + 154;
-        int gap = 4;
-        int buttonWidth = (panelWidth - 24 - gap * 2) / 3;
+        int gap = 3;
+        int buttonWidth = (panelWidth - 24 - gap * 3) / 4;
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("-100 ms"), b -> {
-            LyricsFlowClient.adjustLyricOffset(-100L);
+        addDrawableChild(ButtonWidget.builder(Text.literal("Reload"), b -> {
+            LyricsFlowClient.reloadLyrics();
             clearAndInit();
         }).dimensions(x, y, buttonWidth, 20).build());
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("+100 ms"), b -> {
-            LyricsFlowClient.adjustLyricOffset(100L);
+        addDrawableChild(ButtonWidget.builder(Text.literal("-100"), b -> {
+            LyricsFlowClient.adjustLyricOffset(-100L);
             clearAndInit();
         }).dimensions(x + buttonWidth + gap, y, buttonWidth, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("+100"), b -> {
+            LyricsFlowClient.adjustLyricOffset(100L);
+            clearAndInit();
+        }).dimensions(x + (buttonWidth + gap) * 2, y, buttonWidth, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Reset"), b -> {
             LyricsFlowClient.resetLyricOffset();
             clearAndInit();
-        }).dimensions(x + (buttonWidth + gap) * 2, y, buttonWidth, 20).build());
+        }).dimensions(x + (buttonWidth + gap) * 3, y, buttonWidth, 20).build());
     }
 
     private void initPlaylistControls() {
