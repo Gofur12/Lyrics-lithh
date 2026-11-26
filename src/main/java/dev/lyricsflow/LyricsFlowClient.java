@@ -161,14 +161,25 @@ public final class LyricsFlowClient implements ClientModInitializer {
     }
 
     private static void loadTrack() {
+        NowPlayingBridge.State state = externalState;
+        loadTrackForTitle(state == null ? "" : state.title());
+    }
+
+    private static void loadTrackForTitle(String title) {
         MinecraftClient client = MinecraftClient.getInstance();
-        Path file = client.runDirectory.toPath().resolve(LYRICS_FILE);
+        Path gameDir = client.runDirectory.toPath();
+        Path fallback = gameDir.resolve(LYRICS_FILE);
+        String safeTitle = sanitizeFileName(title);
+        Path songFile = safeTitle.isEmpty() ? fallback
+                : gameDir.resolve("lyricsflow").resolve(safeTitle + ".lrc");
+        Path file = Files.isRegularFile(songFile) ? songFile : fallback;
         try {
-            Files.createDirectories(file.getParent());
-            if (!Files.exists(file)) Files.writeString(file,
-                    "[00:00.00]Put your synced lyrics here\n[00:05.00]Press P to start or pause\n",
+            Files.createDirectories(fallback.getParent());
+            if (!Files.exists(fallback)) Files.writeString(fallback,
+                    "[00:00.00]Put your synced lyrics here\\n[00:05.00]Press P to start or pause\\n",
                     StandardCharsets.UTF_8);
             track = LrcTrack.parse(Files.readString(file, StandardCharsets.UTF_8));
+            loadedLyricsPath = file;
             pausedAt = 0;
             playing = false;
             client.execute(() -> client.inGameHud.setOverlayMessage(
@@ -176,7 +187,23 @@ public final class LyricsFlowClient implements ClientModInitializer {
         } catch (IOException exception) {
             track = LrcTrack.parse("");
             client.execute(() -> client.inGameHud.setOverlayMessage(
-                    Text.literal("LyricsFlow: cannot read current.lrc").formatted(Formatting.RED), false));
+                    Text.literal("LyricsFlow: cannot read " + file.getFileName()).formatted(Formatting.RED), false));
         }
     }
+
+    private static String sanitizeFileName(String title) {
+        if (title == null || title.isBlank()) return "";
+        StringBuilder safe = new StringBuilder();
+        for (int i = 0; i < title.length(); i++) {
+            char ch = title.charAt(i);
+            safe.append("/\\\\:*?\"<>|".indexOf(ch) >= 0 ? '_' : ch);
+        }
+        String result = safe.toString().trim();
+        while (result.endsWith(".") || result.endsWith(" ")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        if (result.length() > 80) result = result.substring(0, 80).trim();
+        return result;
+    }
+}
 }
