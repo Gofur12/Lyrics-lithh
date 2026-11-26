@@ -1,4 +1,4 @@
-name: Build Fabric Mod
+name: Build LyricsFlow Mod and Android Companion
 on:
   push:
     branches: [ "main" ]
@@ -14,13 +14,19 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.7"
-      - name: Build
-        run: gradle build
-      - name: Upload JAR
+      - name: Build Fabric mod and Android companion
+        run: gradle build :companion:assembleDebug
+      - name: Upload Fabric JAR
         uses: actions/upload-artifact@v4
         with:
           name: lyricsflow-fabric-1.20.1
           path: build/libs/*.jar
+      - name: Upload Android companion APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyricsflow-android-companion-debug
+          path: companion/build/outputs/apk/debug/*.apk
