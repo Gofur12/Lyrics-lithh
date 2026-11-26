@@ -30,13 +30,16 @@ GitHub Actions builds both the Fabric JAR and Android companion debug APK on pus
 | L | Reload current.lrc |
 | H | Open touch-friendly control menu |
 
-Press **H** to open the touch-friendly menu with large buttons for overlay visibility, timeline start/pause, and LRC reload. You can also use these in-game commands (including on touch-first setups with a command input):
+Press **H** to open the touch-friendly menu with large buttons for overlay visibility, timeline start/pause, LRC reload, and lyric timing adjustment. Use **-100 ms** or **+100 ms** to fine-tune sync, or reset the offset. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and is limited to ±60,000 ms. You can also use these in-game commands (including on touch-first setups with a command input):
 
 - `/lyricsflow reload`
 - `/lyricsflow toggle`
 - `/lyricsflow play`
 - `/lyricsflow pause`
 - `/lyricsflow menu` — open the touch control screen
+- `/lyricsflow offset 500` — delay lyric timing by 500 ms
+- `/lyricsflow offset -500` — advance lyric timing by 500 ms
+- `/lyricsflow offset reset` — reset timing offset to 0 ms
 
 Example LRC:
 
