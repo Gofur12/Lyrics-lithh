@@ -94,17 +94,12 @@ public final class LyricsFlowClient implements ClientModInitializer {
             LrcTrack.Entry next = track.next(position);
             int centerX = client.getWindow().getScaledWidth() / 2;
             int y = client.getWindow().getScaledHeight() - 58 - hudYOffset;
-            String currentText = current == null ? "♪ LyricsFlow ready" : current.text();
+            String currentText = current == null ? "" : current.text();
             String nextText = next == null ? "" : next.text();
-            boolean externalPlaying = externalState != null ? externalState.playing() : playing;
-            String sourceTitle = externalState == null ? "LyricsFlow" :
-                    (externalState.title().isBlank() ? "External player" : externalState.title());
-            drawCentered(drawContext, client, (externalPlaying ? "▶ " : "Ⅱ ") + sourceTitle, centerX, y - 26, 0x80D8FF);
-            if (externalState != null && !externalState.artist().isBlank()) {
-                drawCentered(drawContext, client, externalState.artist(), centerX, y - 13, 0xC8C8C8);
-            }
-            drawCentered(drawContext, client, currentText, centerX, y, 0xFFFFFF);
-            if (!nextText.isEmpty()) drawCentered(drawContext, client, nextText, centerX, y + 13, 0xB8B8B8);
+            if (isInstructionText(currentText)) currentText = "";
+            if (isInstructionText(nextText)) nextText = "";
+            if (!currentText.isBlank()) drawCentered(drawContext, client, currentText, centerX, y, 0xFFFFFF);
+            if (!nextText.isBlank()) drawCentered(drawContext, client, nextText, centerX, y + 13, 0xB8B8B8);
         });
     }
 
@@ -172,6 +167,14 @@ public final class LyricsFlowClient implements ClientModInitializer {
                             context.getSource().getClient().setScreen(new LyricsFlowScreen());
                             return 1;
                         }))));
+    }
+
+    private static boolean isInstructionText(String text) {
+        String normalized = text == null ? "" : text.trim().toLowerCase(java.util.Locale.ROOT);
+        return normalized.startsWith("press p to start")
+                || normalized.startsWith("press f to start")
+                || normalized.startsWith("put your synced lyrics here")
+                || normalized.equals("lyricsflow ready");
     }
 
     private static void drawCentered(net.minecraft.client.gui.DrawContext context,
@@ -365,9 +368,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         Path file = Files.isRegularFile(songFile) ? songFile : fallback;
         try {
             Files.createDirectories(fallback.getParent());
-            if (!Files.exists(fallback)) Files.writeString(fallback,
-                    "[00:00.00]Put your synced lyrics here\\n[00:05.00]Press P to start or pause\\n",
-                    StandardCharsets.UTF_8);
+            if (!Files.exists(fallback)) Files.writeString(fallback, "", StandardCharsets.UTF_8);
             track = LrcTrack.parse(Files.readString(file, StandardCharsets.UTF_8));
             pausedAt = 0;
             playing = false;
