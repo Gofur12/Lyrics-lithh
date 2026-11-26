@@ -107,7 +107,6 @@ public final class LyricsFlowClient implements ClientModInitializer {
         });
     }
 
-
     private static void registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
                 dispatcher.register(literal("lyricsflow")
@@ -117,7 +116,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
                             return 1;
                         }))
                         .then(literal("toggle").executes(context -> {
-                            visible = !visible;
+                            toggleOverlay();
                             context.getSource().sendFeedback(Text.literal("LyricsFlow overlay: " + (visible ? "shown" : "hidden")));
                             return 1;
                         }))
@@ -328,7 +327,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         try {
             Files.createDirectories(fallback.getParent());
             if (!Files.exists(fallback)) Files.writeString(fallback,
-                    "[00:00.00]Put your synced lyrics here\n[00:05.00]Press P to start or pause\n",
+                    "[00:00.00]Put your synced lyrics here\\n[00:05.00]Press P to start or pause\\n",
                     StandardCharsets.UTF_8);
             track = LrcTrack.parse(Files.readString(file, StandardCharsets.UTF_8));
             pausedAt = 0;
@@ -347,7 +346,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         StringBuilder safe = new StringBuilder();
         for (int i = 0; i < title.length(); i++) {
             char ch = title.charAt(i);
-            safe.append("/\\:*?\"<>|".indexOf(ch) >= 0 ? '_' : ch);
+            safe.append("/\\\\:*?\\\"<>|".indexOf(ch) >= 0 ? '_' : ch);
         }
         String result = safe.toString().trim();
         while (result.endsWith(".") || result.endsWith(" ")) {
