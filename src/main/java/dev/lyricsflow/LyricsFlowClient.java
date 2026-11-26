@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 
 public final class LyricsFlowClient implements ClientModInitializer {
     private static final Path LYRICS_FILE = Path.of("lyricsflow", "current.lrc");
