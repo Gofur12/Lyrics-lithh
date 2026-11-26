@@ -25,7 +25,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
     private static boolean playing = false;
     private static long startedAt = 0L;
     private static long pausedAt = 0L;
-    private static KeyBinding toggleKey, playPauseKey, reloadKey;
+    private static KeyBinding toggleKey, playPauseKey, reloadKey, menuKey;
 
     @Override
     public void onInitializeClient() {
@@ -35,6 +35,8 @@ public final class LyricsFlowClient implements ClientModInitializer {
                 "key.lyricsflow.play_pause", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_P, "category.lyricsflow"));
         reloadKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.lyricsflow.reload", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.lyricsflow"));
+        menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.lyricsflow.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.lyricsflow"));
         loadTrack();
         registerCommands();
 
@@ -42,6 +44,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
             while (toggleKey.wasPressed()) visible = !visible;
             while (playPauseKey.wasPressed()) togglePlayback();
             while (reloadKey.wasPressed()) loadTrack();
+            while (menuKey.wasPressed()) client.setScreen(new LyricsFlowScreen());
         });
 
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
@@ -94,6 +97,13 @@ public final class LyricsFlowClient implements ClientModInitializer {
         context.fill(x - width / 2 - 5, y - 2, x + width / 2 + 5, y + 11, 0x90000000);
         context.drawTextWithShadow(client.textRenderer, Text.literal(safe), x - width / 2, y, color);
     }
+
+    static boolean isVisible() { return visible; }
+    static boolean isPlaying() { return playing; }
+    static void toggleOverlay() { visible = !visible; }
+    static void startPlayback() { if (!playing) togglePlayback(); }
+    static void pausePlayback() { if (playing) togglePlayback(); }
+    static void reloadLyrics() { loadTrack(); }
 
     private static void togglePlayback() {
         long now = System.currentTimeMillis();
