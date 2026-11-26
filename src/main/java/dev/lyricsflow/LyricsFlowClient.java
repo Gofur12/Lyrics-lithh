@@ -161,6 +161,12 @@ public final class LyricsFlowClient implements ClientModInitializer {
     static boolean isVisible() { return visible; }
     static boolean isPlaying() { return playing; }
     static String getSelectedLocalTitle() { return selectedLocalTitle; }
+    static long getPlaybackPositionMs() {
+        NowPlayingBridge.State state = externalState;
+        return Math.max(0L, state != null ? externalPositionMs(state) : positionMs());
+    }
+    static long getLyricsDurationMs() { return track.durationMs(); }
+    static boolean hasExternalPlayer() { return externalState != null; }
     static void selectLocalTrack(String title) {
         selectedLocalTitle = title == null ? "" : title.trim();
         pausedAt = 0L;
