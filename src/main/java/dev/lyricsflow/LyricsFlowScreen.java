@@ -184,10 +184,21 @@ public final class LyricsFlowScreen extends Screen {
         context.fill(x, y + 8, x + 76, y + 84, 0xFF394252);
         context.drawCenteredTextWithShadow(textRenderer, "♪", x + 38, y + 38, 0xFFB9DDE5);
         context.drawTextWithShadow(textRenderer, LyricsFlowClient.getSelectedLocalTitle().isEmpty() ? "Belum ada lagu" : trim(LyricsFlowClient.getSelectedLocalTitle(), 30), x + 90, y + 12, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, "Pemutar timeline LRC internal", x + 90, y + 27, 0xFFB0B8C5);
-        context.fill(x + 90, y + 52, panelLeft + panelWidth - 22, y + 55, 0xFF596273);
-        context.drawTextWithShadow(textRenderer, "00:00", x + 90, y + 62, 0xFFB0B8C5);
-        context.drawTextWithShadow(textRenderer, "--:--", panelLeft + panelWidth - 52, y + 62, 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer,
+                LyricsFlowClient.hasExternalPlayer() ? "Posisi dari pemutar eksternal" : "Timeline lirik internal",
+                x + 90, y + 27, 0xFFB0B8C5);
+        int barLeft = x + 90;
+        int barRight = panelLeft + panelWidth - 22;
+        int barWidth = Math.max(1, barRight - barLeft);
+        long duration = LyricsFlowClient.getLyricsDurationMs();
+        long position = LyricsFlowClient.getPlaybackPositionMs();
+        long shownPosition = duration > 0 ? Math.min(position, duration) : position;
+        int filled = duration > 0 ? (int) (barWidth * (double) shownPosition / duration) : 0;
+        context.fill(barLeft, y + 52, barRight, y + 55, 0xFF596273);
+        if (filled > 0) context.fill(barLeft, y + 52, barLeft + filled, y + 55, 0xFF70C7D8);
+        context.drawTextWithShadow(textRenderer, formatTime(shownPosition), barLeft, y + 62, 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer, duration > 0 ? formatTime(duration) : "--:--",
+                barRight - 30, y + 62, 0xFFB0B8C5);
     }
 
     private void renderLyrics(DrawContext context, int y) {
@@ -219,6 +230,11 @@ public final class LyricsFlowScreen extends Screen {
             context.drawTextWithShadow(textRenderer, "Gunakan tombol Hapus lagu untuk menghapus item ini.", x, y + 44, 0xFFB0B8C5);
         }
         context.drawTextWithShadow(textRenderer, "Data lokal: lyricsflow/playlists.json", x, y + 62, 0xFF8995A7);
+    }
+
+    private static String formatTime(long milliseconds) {
+        long totalSeconds = Math.max(0L, milliseconds) / 1000L;
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", totalSeconds / 60L, totalSeconds % 60L);
     }
 
     private static String trim(String value, int max) {
