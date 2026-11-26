@@ -1,4 +1,4 @@
-name: Build LyricsFlow Mod and Android Companion
+name: Build LyricsFlow Fabric Mod
 on:
   push:
     branches: [ "main" ]
@@ -14,30 +14,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
-          fi
-          echo "Using sdkmanager: $SDKMANAGER"
-          set +o pipefail
-          yes | "$SDKMANAGER" --licenses
-          set -o pipefail
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.7"
-      - name: Build Fabric mod and Android companion
-        run: gradle build :companion:assembleDebug
+      - name: Build Fabric mod
+        run: gradle build
       - name: Upload Fabric JAR
         uses: actions/upload-artifact@v4
         with:
           name: lyricsflow-fabric-1.20.1
           path: build/libs/*.jar
-      - name: Upload Android companion APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: lyricsflow-android-companion-debug
-          path: companion/build/outputs/apk/debug/*.apk
