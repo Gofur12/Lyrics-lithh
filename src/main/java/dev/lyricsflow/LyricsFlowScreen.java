@@ -3,27 +3,25 @@ package dev.lyricsflow;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
-/**
- * Main LyricsFlow player shell. The layout is deliberately drawn with
- * vanilla GUI primitives so it works without a browser/native dependency.
- */
+/** Main LyricsFlow player shell, drawn with vanilla GUI primitives for Android compatibility. */
 public final class LyricsFlowScreen extends Screen {
     private enum Tab {
         PLAYER("Player"), LYRICS("Lirik"), SPOTIFY("Spotify"),
         YOUTUBE("YouTube"), LOCAL("Musik HP"), PLAYLIST("Playlist"), APP("App");
-
         final String label;
         Tab(String label) { this.label = label; }
     }
 
     private Tab selectedTab = Tab.PLAYER;
     private int panelLeft, panelTop, panelWidth, panelHeight;
+    private int selectedPlaylist;
+    private int selectedTrack;
+    private TextFieldWidget playlistInput;
 
-    public LyricsFlowScreen() {
-        super(Text.literal("LyricsFlow"));
-    }
+    public LyricsFlowScreen() { super(Text.literal("LyricsFlow")); }
 
     @Override
     protected void init() {
@@ -35,7 +33,7 @@ public final class LyricsFlowScreen extends Screen {
 
         int tabY = panelTop + 8;
         int tabX = panelLeft + 10;
-        int tabW = Math.max(42, (panelWidth - 20) / Tab.values().length);
+        int tabW = Math.max(35, (panelWidth - 20) / Tab.values().length);
         for (Tab tab : Tab.values()) {
             final Tab target = tab;
             addDrawableChild(ButtonWidget.builder(Text.literal(tab.label), button -> {
@@ -45,19 +43,68 @@ public final class LyricsFlowScreen extends Screen {
             tabX += tabW;
         }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ"), button -> {
-            if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
-            else LyricsFlowClient.startPlayback();
-            clearAndInit();
-        }).dimensions(panelLeft + panelWidth / 2 - 12, panelTop + panelHeight - 34, 24, 20).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Lirik"), button -> {
-            selectedTab = Tab.LYRICS;
-            clearAndInit();
-        }).dimensions(panelLeft + 10, panelTop + panelHeight - 34, 42, 20).build());
-
+        if (selectedTab == Tab.PLAYLIST) {
+            initPlaylistControls();
+        } else {
+            addDrawableChild(ButtonWidget.builder(Text.literal("Ⅱ / ▶"), button -> {
+                if (LyricsFlowClient.isPlaying()) LyricsFlowClient.pausePlayback();
+                else LyricsFlowClient.startPlayback();
+                clearAndInit();
+            }).dimensions(panelLeft + panelWidth / 2 - 32, panelTop + panelHeight - 34, 64, 20).build());
+        }
         addDrawableChild(ButtonWidget.builder(Text.literal("Selesai"), button -> close())
                 .dimensions(panelLeft + panelWidth - 58, panelTop + panelHeight - 34, 48, 20).build());
+    }
+
+    private void initPlaylistControls() {
+        int x = panelLeft + 12;
+        int y = panelTop + 82;
+        int fieldWidth = panelWidth - 24;
+        playlistInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20, Text.literal("Nama playlist / judul lagu"));
+        playlistInput.setMaxLength(100);
+        addDrawableChild(playlistInput);
+
+        int gap = 4;
+        int buttonWidth = (fieldWidth - gap * 2) / 3;
+        addDrawableChild(ButtonWidget.builder(Text.literal("Buat"), b -> {
+            if (PlaylistStore.create(playlistInput.getText())) selectedPlaylist = PlaylistStore.size() - 1;
+            selectedTrack = 0;
+            clearAndInit();
+        }).dimensions(x, y + 24, buttonWidth, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Ubah nama"), b -> {
+            if (PlaylistStore.rename(selectedPlaylist, playlistInput.getText())) clearAndInit();
+        }).dimensions(x + buttonWidth + gap, y + 24, buttonWidth, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Hapus"), b -> {
+            PlaylistStore.delete(selectedPlaylist);
+            selectedPlaylist = Math.max(0, Math.min(selectedPlaylist, PlaylistStore.size() - 1));
+            selectedTrack = 0;
+            clearAndInit();
+        }).dimensions(x + (buttonWidth + gap) * 2, y + 24, buttonWidth, 20).build());
+
+        int half = (fieldWidth - gap) / 2;
+        addDrawableChild(ButtonWidget.builder(Text.literal("+ Tambah lagu"), b -> {
+            if (PlaylistStore.addTrack(selectedPlaylist, playlistInput.getText())) {
+                PlaylistStore.selected(selectedPlaylist);
+                selectedTrack = Math.max(0, PlaylistStore.selected(selectedPlaylist).tracks.size() - 1);
+                clearAndInit();
+            }
+        }).dimensions(x, y + 48, half, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("- Hapus lagu"), b -> {
+            PlaylistStore.removeTrack(selectedPlaylist, selectedTrack);
+            selectedTrack = Math.max(0, selectedTrack - 1);
+            clearAndInit();
+        }).dimensions(x + half + gap, y + 48, half, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.literal("‹ Playlist"), b -> {
+            if (PlaylistStore.size() > 0) selectedPlaylist = Math.floorMod(selectedPlaylist - 1, PlaylistStore.size());
+            selectedTrack = 0;
+            clearAndInit();
+        }).dimensions(x, y + 72, half, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Playlist ›"), b -> {
+            if (PlaylistStore.size() > 0) selectedPlaylist = Math.floorMod(selectedPlaylist + 1, PlaylistStore.size());
+            selectedTrack = 0;
+            clearAndInit();
+        }).dimensions(x + half + gap, y + 72, half, 20).build());
     }
 
     @Override
@@ -76,12 +123,11 @@ public final class LyricsFlowScreen extends Screen {
             case PLAYER -> renderPlayer(context, contentTop);
             case LYRICS -> renderLyrics(context, contentTop);
             case PLAYLIST -> renderPlaylist(context, contentTop);
-            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Login dan katalog akan diintegrasikan pada tahap layanan.");
+            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Integrasi login dan pemutaran belum tersedia.");
             case YOUTUBE -> renderService(context, contentTop, "YouTube", "youtube.com — bukan YouTube Music.");
-            case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses file musik Android memerlukan integrasi penyimpanan perangkat.");
-            case APP -> renderService(context, contentTop, "App", "Pengaturan dan integrasi LyricsFlow.");
+            case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses audio Android belum terhubung.");
+            case APP -> renderService(context, contentTop, "App", "Pengaturan LyricsFlow.");
         }
-
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -94,7 +140,6 @@ public final class LyricsFlowScreen extends Screen {
         context.fill(x + 90, y + 52, panelLeft + panelWidth - 22, y + 55, 0xFF596273);
         context.drawTextWithShadow(textRenderer, "00:00", x + 90, y + 62, 0xFFB0B8C5);
         context.drawTextWithShadow(textRenderer, "--:--", panelLeft + panelWidth - 52, y + 62, 0xFFB0B8C5);
-        context.drawTextWithShadow(textRenderer, "PREV       PLAY / PAUSE       NEXT", x + 90, y + 86, 0xFF70C7D8);
     }
 
     private void renderLyrics(DrawContext context, int y) {
@@ -104,9 +149,27 @@ public final class LyricsFlowScreen extends Screen {
     }
 
     private void renderPlaylist(DrawContext context, int y) {
-        context.drawTextWithShadow(textRenderer, "PLAYLIST LOKAL", panelLeft + 22, y + 14, 0xFFFFFFFF);
-        context.drawTextWithShadow(textRenderer, "Belum ada playlist.", panelLeft + 22, y + 34, 0xFFB0B8C5);
-        context.drawTextWithShadow(textRenderer, "Manajemen playlist: tahap berikutnya.", panelLeft + 22, y + 54, 0xFF70C7D8);
+        int x = panelLeft + 20;
+        PlaylistStore.Playlist playlist = PlaylistStore.selected(selectedPlaylist);
+        if (playlist == null) {
+            context.drawTextWithShadow(textRenderer, "Belum ada playlist. Isi nama lalu tekan Buat.", x, y + 10, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, "Daftar tersimpan di lyricsflow/playlists.json", x, y + 28, 0xFFB0B8C5);
+            return;
+        }
+        context.drawTextWithShadow(textRenderer, "Playlist: " + playlist.name + " (" + (selectedPlaylist + 1) + "/" + PlaylistStore.size() + ")", x, y + 8, 0xFFFFFFFF);
+        if (playlist.tracks.isEmpty()) {
+            context.drawTextWithShadow(textRenderer, "Belum ada lagu. Isi judul lalu + Tambah lagu.", x, y + 26, 0xFFB0B8C5);
+        } else {
+            selectedTrack = Math.floorMod(selectedTrack, playlist.tracks.size());
+            String title = playlist.tracks.get(selectedTrack);
+            context.drawTextWithShadow(textRenderer, "Lagu " + (selectedTrack + 1) + "/" + playlist.tracks.size() + ": " + trim(title, 36), x, y + 26, 0xFF70C7D8);
+            context.drawTextWithShadow(textRenderer, "Gunakan tombol Hapus lagu untuk menghapus item ini.", x, y + 44, 0xFFB0B8C5);
+        }
+        context.drawTextWithShadow(textRenderer, "Data lokal: lyricsflow/playlists.json", x, y + 62, 0xFF8995A7);
+    }
+
+    private static String trim(String value, int max) {
+        return value.length() > max ? value.substring(0, max - 3) + "..." : value;
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
@@ -114,8 +177,5 @@ public final class LyricsFlowScreen extends Screen {
         context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 38, 0xFFB0B8C5);
     }
 
-    @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    @Override public boolean shouldPause() { return false; }
 }
