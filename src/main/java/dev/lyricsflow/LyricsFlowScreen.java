@@ -105,7 +105,7 @@ public final class LyricsFlowScreen extends Screen {
         addDrawableChild(serviceSearchInput);
 
         String service = selectedTab == Tab.YOUTUBE ? "YouTube" : "Spotify";
-        addDrawableChild(ButtonWidget.builder(Text.literal("Salin link pencarian " + service), button -> {
+        addDrawableChild(ButtonWidget.builder(Text.literal("Cari di " + service), button -> {
             String query = serviceSearchInput.getText().trim();
             if (query.isEmpty()) {
                 if (client != null) client.inGameHud.setOverlayMessage(
