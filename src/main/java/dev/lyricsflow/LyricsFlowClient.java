@@ -87,6 +87,9 @@ public final class LyricsFlowClient implements ClientModInitializer {
                             if (playing) togglePlayback();
                             context.getSource().sendFeedback(Text.literal("LyricsFlow timeline paused"));
                             return 1;
+                        })).then(literal("menu").executes(context -> {
+                            context.getSource().getClient().setScreen(new LyricsFlowScreen());
+                            return 1;
                         }))));
     }
 
