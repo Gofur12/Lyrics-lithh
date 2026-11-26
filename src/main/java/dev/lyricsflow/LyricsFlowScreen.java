@@ -237,7 +237,6 @@ public final class LyricsFlowScreen extends Screen {
             PlaylistStore.Track track = playlist.tracks.get(selectedTrack);
             context.drawTextWithShadow(textRenderer, "Lagu " + (selectedTrack + 1) + "/" + playlist.tracks.size() + ": " + trim(track.title, 36), x, y + 26, 0xFF70C7D8);
             context.drawTextWithShadow(textRenderer, track.lrcFile.isBlank() ? "LRC: otomatis berdasarkan judul" : "LRC: " + trim(track.lrcFile, 34), x, y + 40, 0xFF8995A7);
-            context.drawTextWithShadow(textRenderer, "Gunakan tombol Hapus lagu untuk menghapus item ini.", x, y + 44, 0xFFB0B8C5);
         }
         context.drawTextWithShadow(textRenderer, "Tambah: Judul | nama-file.lrc", x, y + 62, 0xFF8995A7);
         context.drawTextWithShadow(textRenderer, "File LRC berada di folder lyricsflow/", x, y + 76, 0xFF8995A7);
