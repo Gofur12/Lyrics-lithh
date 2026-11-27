@@ -256,11 +256,32 @@ public final class LyricsFlowScreen extends Screen {
                         connection.disconnect();
                     }
                     if (code < 200 || code >= 300) {
-                        JsonObject error = JsonParser.parseString(body).getAsJsonObject();
-                        String message = error.has("error")
-                                ? error.getAsJsonObject("error").get("message").getAsString()
-                                : "HTTP " + code;
-                        status = "YouTube API: " + message;
+                        String reason = "HTTP " + code;
+                        String message = "";
+                        try {
+                            JsonObject error = JsonParser.parseString(body).getAsJsonObject();
+                            if (error.has("error")) {
+                                JsonObject details = error.getAsJsonObject("error");
+                                if (details.has("message")) message = details.get("message").getAsString();
+                                if (details.has("errors") && details.getAsJsonArray("errors").size() > 0) {
+                                    JsonObject first = details.getAsJsonArray("errors").get(0).getAsJsonObject();
+                                    if (first.has("reason")) reason = first.get("reason").getAsString();
+                                }
+                            }
+                        } catch (Exception ignored) {
+                            // Keep the HTTP status if the API returned a non-JSON error page.
+                        }
+                        if ("keyInvalid".equals(reason)) {
+                            status = "API key tidak valid. Periksa key Google Cloud.";
+                        } else if ("quotaExceeded".equals(reason) || "dailyLimitExceeded".equals(reason)) {
+                            status = "Kuota YouTube API habis. Coba lagi besok.";
+                        } else if ("accessNotConfigured".equals(reason) || "serviceDisabled".equals(reason)) {
+                            status = "Aktifkan YouTube Data API v3 di Google Cloud.";
+                        } else if ("forbidden".equals(reason)) {
+                            status = "Akses ditolak. Periksa pembatasan API key.";
+                        } else {
+                            status = "YouTube " + reason + (message.isBlank() ? "" : ": " + message);
+                        }
                     } else {
                         JsonObject response = JsonParser.parseString(body).getAsJsonObject();
                         nextToken = response.has("nextPageToken") ? response.get("nextPageToken").getAsString() : "";
@@ -582,6 +603,9 @@ public final class LyricsFlowScreen extends Screen {
         if (!selectedYoutubeVideoId.isBlank()) {
             context.drawTextWithShadow(textRenderer, "ID: " + selectedYoutubeVideoId, x, y + 78, 0xFF8995A7);
         }
+        context.drawTextWithShadow(textRenderer,
+                "API Key: " + (ServiceConfig.youtubeApiKey().isBlank() ? "BELUM DIISI" : "TERSIMPAN"),
+                x, y + 92, ServiceConfig.youtubeApiKey().isBlank() ? 0xFFFFC56B : 0xFF70C7D8);
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
