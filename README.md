@@ -31,6 +31,7 @@ GitHub Actions builds the Fabric JAR. Download the `lyricsflow-fabric-1.20.1` ar
 3. Launch Minecraft 1.20.1 with Fabric.
 4. On first launch, the mod creates `lyricsflow/current.lrc` in the game directory.
 5. Replace it with an LRC file. For a song-specific file, put `<Song Title>.lrc` in the same `lyricsflow` folder.
+6. On first launch, the mod also creates `lyricsflow/services.properties`. Put your own `youtube_api_key` and `spotify_client_id` values there. Keep this file private; never commit or share it.
 
 | Key | Action |
 | --- | --- |
