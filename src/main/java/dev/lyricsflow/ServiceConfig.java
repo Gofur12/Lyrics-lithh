@@ -48,6 +48,21 @@ final class ServiceConfig {
         return values.getProperty("spotify_client_id", "274e902910c045aa812c83adfd281356").trim();
     }
 
+    static synchronized void setYoutubeApiKey(String key) {
+        load();
+        String clean = key == null ? "" : key.trim();
+        values.setProperty("youtube_api_key", clean);
+        Path file = configPath();
+        try {
+            Files.createDirectories(file.getParent());
+            try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                values.store(writer, "LyricsFlow service configuration. Keep private; do not share.");
+            }
+        } catch (Exception e) {
+            System.err.println("[LyricsFlow] Could not save YouTube API key: " + e.getMessage());
+        }
+    }
+
     static String youtubeApiKey() {
         return values.getProperty("youtube_api_key", "").trim();
     }
