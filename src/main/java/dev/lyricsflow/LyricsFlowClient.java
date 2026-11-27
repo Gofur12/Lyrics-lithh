@@ -57,6 +57,7 @@ public final class LyricsFlowClient implements ClientModInitializer {
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.lyricsflow.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.lyricsflow"));
         loadSettings();
+        ServiceConfig.load();
         loadTrack();
         registerCommands();
 
