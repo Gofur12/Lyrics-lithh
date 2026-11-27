@@ -137,7 +137,10 @@ public final class LyricsFlowScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.literal(youtubeSearching ? "Mencari..." : "Cari di YouTube"), button -> {
                 String query = serviceSearchInput.getText().trim();
                 if (query.isEmpty() || youtubeSearching) return;
-                youtubeLastQuery = query;\n                youtubeNextPageToken = \"\";\n                youtubeScrollOffset = 0;\n                searchYouTube(query, \"\", false);
+                youtubeLastQuery = query;
+                youtubeNextPageToken = "";
+                youtubeScrollOffset = 0;
+                searchYouTube(query, "", false);
             }).dimensions(x, y + 26, fieldWidth, 20).build());
 
             int resultY = y + 64;
