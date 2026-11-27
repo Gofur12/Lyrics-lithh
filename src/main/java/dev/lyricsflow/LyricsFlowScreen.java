@@ -603,7 +603,7 @@ public final class LyricsFlowScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (selectedTab == Tab.YOUTUBE && youtubeResults.size() > 0
                 && mouseX >= panelLeft + 12 && mouseX <= panelLeft + panelWidth - 12
-                && mouseY >= panelTop + 250 && mouseY <= panelTop + panelHeight - 12) {
+                && mouseY >= panelTop + 170 && mouseY <= panelTop + panelHeight - 12) {
             int maxOffset = Math.max(0, youtubeResults.size() - 3);
             if (amount < 0 && youtubeScrollOffset >= maxOffset
                     && !youtubeNextPageToken.isBlank() && !youtubeSearching) {
