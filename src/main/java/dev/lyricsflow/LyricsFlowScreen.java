@@ -168,6 +168,7 @@ public final class LyricsFlowScreen extends Screen {
         Thread worker = new Thread(() -> {
             List<YouTubeResult> found = new ArrayList<>();
             String status;
+            String nextToken = "";
             try {
                 ServiceConfig.load();
                 String key = ServiceConfig.youtubeApiKey();
