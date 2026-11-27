@@ -500,16 +500,19 @@ public final class LyricsFlowScreen extends Screen {
 
     private void renderYouTube(DrawContext context, int y) {
         int x = panelLeft + 20;
-        if (!youtubeSearchStatus.isBlank()) {
-            context.drawTextWithShadow(textRenderer, trim(youtubeSearchStatus, 52), x, y + 48, 0xFFB0B8C5);
-        } else {
-            context.drawTextWithShadow(textRenderer, "Cari video langsung dari menu ini.", x, y + 48, 0xFFB0B8C5);
-        }
+        String status = !youtubeSearchStatus.isBlank()
+                ? youtubeSearchStatus
+                : (youtubeResults.isEmpty() ? "Cari video langsung dari menu ini." : "Hasil pencarian YouTube");
         if (!selectedYoutubeVideoId.isBlank()) {
-            context.drawTextWithShadow(textRenderer, "Dipilih: " + selectedYoutubeVideoId, x, y + 48, 0xFF70C7D8);
+            status = "Video dipilih: " + selectedYoutubeVideoId;
         } else if (!youtubeResults.isEmpty()) {
-            context.drawTextWithShadow(textRenderer, "Scroll untuk hasil lainnya (" + (youtubeScrollOffset + 1) + "-" + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size() + (youtubeNextPageToken.isBlank() ? "" : " • scroll lanjut") + ")", x, y + 48, 0xFF8995A7);
+            status += " (" + (youtubeScrollOffset + 1) + "-"
+                    + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size()
+                    + (youtubeNextPageToken.isBlank() ? "" : ", gulir untuk lanjut") + ")";
         }
+        // Keep status below the search button and above the result rows.
+        context.drawTextWithShadow(textRenderer, trim(status, 58), x, y + 66,
+                selectedYoutubeVideoId.isBlank() ? 0xFFB0B8C5 : 0xFF70C7D8);
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
