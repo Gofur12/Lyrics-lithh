@@ -33,6 +33,7 @@ final class SpotifyService {
     private static volatile long expiresAt;
     private static volatile String status = "Belum terhubung";
     private static volatile boolean loggingIn;
+    private static volatile boolean tokenLoaded;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     static final class Track {
@@ -135,6 +136,15 @@ final class SpotifyService {
     }
 
     private static synchronized void ensureToken() throws Exception {
+        if (!tokenLoaded) {
+            tokenLoaded = true;
+            Path file = tokenFile();
+            if (Files.exists(file)) {
+                Properties saved = new Properties();
+                try (InputStream in = Files.newInputStream(file)) { saved.load(in); }
+                refreshToken = saved.getProperty("refresh_token", "");
+            }
+        }
         if (!accessToken.isBlank() && System.currentTimeMillis() < expiresAt - 60000) return;
         if (refreshToken.isBlank()) { accessToken = ""; return; }
         String data = "grant_type=refresh_token&refresh_token=" + enc(refreshToken)
