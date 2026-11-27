@@ -68,7 +68,7 @@ public final class LyricsFlowScreen extends Screen {
     protected void init() {
         clearChildren();
         panelWidth = Math.min(430, Math.max(260, width - 24));
-        panelHeight = Math.min(selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
+        panelHeight = Math.min(selectedTab == Tab.YOUTUBE ? 280 : selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
         panelLeft = (width - panelWidth) / 2;
         panelTop = (height - panelHeight) / 2;
 
