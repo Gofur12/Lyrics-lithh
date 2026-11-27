@@ -39,6 +39,7 @@ public final class LyricsFlowScreen extends Screen {
     private int selectedTrack;
     private TextFieldWidget playlistInput;
     private TextFieldWidget serviceSearchInput;
+    private TextFieldWidget youtubeApiKeyInput;
     private final List<YouTubeResult> youtubeResults = new ArrayList<>();
     private String youtubeSearchStatus = "";
     private String selectedYoutubeVideoId = "";
@@ -71,7 +72,7 @@ public final class LyricsFlowScreen extends Screen {
     protected void init() {
         clearChildren();
         panelWidth = Math.min(430, Math.max(260, width - 24));
-        panelHeight = Math.min(selectedTab == Tab.YOUTUBE || selectedTab == Tab.SPOTIFY ? 280 : selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
+        panelHeight = Math.min(selectedTab == Tab.YOUTUBE ? 330 : selectedTab == Tab.SPOTIFY ? 280 : selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
         panelLeft = (width - panelWidth) / 2;
         panelTop = (height - panelHeight) / 2;
 
@@ -135,18 +136,35 @@ public final class LyricsFlowScreen extends Screen {
 
     private void initServiceControls() {
         int x = panelLeft + 18;
-        int y = panelTop + 91;
         int fieldWidth = panelWidth - 36;
         String initial = !LyricsFlowClient.getLrcTitle().isBlank()
                 ? LyricsFlowClient.getLrcTitle() : LyricsFlowClient.getSelectedLocalTitle();
-        serviceSearchInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20,
-                Text.literal("Masukkan judul lagu atau artis"));
-        serviceSearchInput.setMaxLength(120);
-        serviceSearchInput.setText(initial);
-        serviceSearchInput.setPlaceholder(Text.literal("Judul lagu atau nama artis"));
-        addDrawableChild(serviceSearchInput);
 
         if (selectedTab == Tab.YOUTUBE) {
+            ServiceConfig.load();
+            int keyY = panelTop + 76;
+            youtubeApiKeyInput = new TextFieldWidget(textRenderer, x, keyY, fieldWidth, 20,
+                    Text.literal("YouTube API key"));
+            youtubeApiKeyInput.setMaxLength(200);
+            youtubeApiKeyInput.setText(ServiceConfig.youtubeApiKey());
+            youtubeApiKeyInput.setPlaceholder(Text.literal("Tempel YouTube Data API v3 key"));
+            addDrawableChild(youtubeApiKeyInput);
+
+            addDrawableChild(ButtonWidget.builder(Text.literal("Simpan API Key"), button -> {
+                ServiceConfig.setYoutubeApiKey(youtubeApiKeyInput.getText());
+                youtubeSearchStatus = youtubeApiKeyInput.getText().isBlank()
+                        ? "API key dihapus." : "API key tersimpan di perangkat.";
+                clearAndInit();
+            }).dimensions(x, keyY + 23, fieldWidth, 20).build());
+
+            int queryY = keyY + 49;
+            serviceSearchInput = new TextFieldWidget(textRenderer, x, queryY, fieldWidth, 20,
+                    Text.literal("Masukkan judul lagu atau artis"));
+            serviceSearchInput.setMaxLength(120);
+            serviceSearchInput.setText(initial);
+            serviceSearchInput.setPlaceholder(Text.literal("Judul lagu atau nama artis"));
+            addDrawableChild(serviceSearchInput);
+
             addDrawableChild(ButtonWidget.builder(Text.literal(youtubeSearching ? "Mencari..." : "Cari di YouTube"), button -> {
                 String query = serviceSearchInput.getText().trim();
                 if (query.isEmpty() || youtubeSearching) return;
@@ -154,9 +172,9 @@ public final class LyricsFlowScreen extends Screen {
                 youtubeNextPageToken = "";
                 youtubeScrollOffset = 0;
                 searchYouTube(query, "", false);
-            }).dimensions(x, y + 26, fieldWidth, 20).build());
+            }).dimensions(x, queryY + 23, fieldWidth, 20).build());
 
-            int resultY = y + 64;
+            int resultY = queryY + 49;
             int count = Math.min(3, Math.max(0, youtubeResults.size() - youtubeScrollOffset));
             for (int i = 0; i < count; i++) {
                 YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
@@ -170,6 +188,14 @@ public final class LyricsFlowScreen extends Screen {
                 }).dimensions(x, resultY + i * 22, fieldWidth, 20).build());
             }
         } else {
+            int y = panelTop + 91;
+            serviceSearchInput = new TextFieldWidget(textRenderer, x, y, fieldWidth, 20,
+                    Text.literal("Masukkan judul lagu atau artis"));
+            serviceSearchInput.setMaxLength(120);
+            serviceSearchInput.setText(initial);
+            serviceSearchInput.setPlaceholder(Text.literal("Judul lagu atau nama artis"));
+            addDrawableChild(serviceSearchInput);
+
             addDrawableChild(ButtonWidget.builder(Text.literal(SpotifyService.connected() ? "Terhubung" : SpotifyService.loggingIn() ? "Menunggu login..." : "Hubungkan Spotify"), button -> {
                 if (!SpotifyService.connected()) {
                     SpotifyService.login();
@@ -443,7 +469,7 @@ public final class LyricsFlowScreen extends Screen {
 
     private void renderYouTubeThumbnails(DrawContext context) {
         int x = panelLeft + 20 + 2;
-        int resultY = panelTop + 91 + 64;
+        int resultY = panelTop + 76 + 49 + 49;
         for (int i = 0; i < Math.min(3, Math.max(0, youtubeResults.size() - youtubeScrollOffset)); i++) {
             YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
             loadYouTubeThumbnail(result);
@@ -577,7 +603,7 @@ public final class LyricsFlowScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (selectedTab == Tab.YOUTUBE && youtubeResults.size() > 0
                 && mouseX >= panelLeft + 12 && mouseX <= panelLeft + panelWidth - 12
-                && mouseY >= panelTop + 150 && mouseY <= panelTop + panelHeight - 12) {
+                && mouseY >= panelTop + 250 && mouseY <= panelTop + panelHeight - 12) {
             int maxOffset = Math.max(0, youtubeResults.size() - 3);
             if (amount < 0 && youtubeScrollOffset >= maxOffset
                     && !youtubeNextPageToken.isBlank() && !youtubeSearching) {
