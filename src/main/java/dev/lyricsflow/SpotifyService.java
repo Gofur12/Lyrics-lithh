@@ -71,16 +71,30 @@ final class SpotifyService {
                     try (Socket socket = server.accept()) {
                         socket.setSoTimeout(10000);
                         String request = readRequestLine(socket.getInputStream());
-                        String target = request.split(" ")[1];
-                        String query = target.contains("?") ? target.substring(target.indexOf('?') + 1) : "";
+                        String[] requestParts = request.split(" ", 3);
+                        if (requestParts.length < 2 || !requestParts[0].equals("GET")
+                                || !requestParts[1].startsWith("/callback?")) {
+                            writeResponse(socket.getOutputStream(), "Callback Spotify tidak dikenali. Tutup tab ini.");
+                            throw new IllegalStateException("Request callback tidak valid");
+                        }
+                        String query = requestParts[1].substring(requestParts[1].indexOf('?') + 1);
                         java.util.Map<String,String> params = parseQuery(query);
-                        String response = params.getOrDefault("code", "");
-                        if (!state.equals(params.get("state")) || response.isBlank()) {
-                            writeResponse(socket.getOutputStream(), "Login Spotify dibatalkan atau state tidak cocok. Tutup tab ini.");
-                            throw new IllegalStateException("Callback Spotify tidak valid");
+                        if (!state.equals(params.get("state"))) {
+                            writeResponse(socket.getOutputStream(), "Verifikasi login gagal. Silakan coba lagi.");
+                            throw new IllegalStateException("State OAuth tidak cocok");
+                        }
+                        if (params.containsKey("error")) {
+                            String error = params.get("error");
+                            writeResponse(socket.getOutputStream(), "Login Spotify dibatalkan. Kamu bisa menutup tab ini.");
+                            throw new IllegalStateException("Spotify: " + error);
+                        }
+                        String code = params.getOrDefault("code", "");
+                        if (code.isBlank()) {
+                            writeResponse(socket.getOutputStream(), "Kode login tidak diterima. Silakan coba lagi.");
+                            throw new IllegalStateException("Kode OAuth kosong");
                         }
                         writeResponse(socket.getOutputStream(), "Spotify berhasil dihubungkan. Kamu bisa kembali ke Minecraft.");
-                        exchangeCode(response, verifier, clientId);
+                        exchangeCode(code, verifier, clientId);
                     }
                 }
                 status = "Terhubung ke Spotify";
