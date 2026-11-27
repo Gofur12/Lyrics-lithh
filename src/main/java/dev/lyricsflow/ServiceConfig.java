@@ -2,36 +2,53 @@ package dev.lyricsflow;
 
 import net.minecraft.client.MinecraftClient;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-/** Loads private service credentials from the instance-local lyricsflow/services.properties file. */
+/** Loads service configuration from the instance-local lyricsflow folder. */
 final class ServiceConfig {
     private static final String FILE_NAME = "services.properties";
     private static volatile Properties values = new Properties();
 
     private ServiceConfig() {}
 
-    static void load() {
+    static synchronized void load() {
         Path file = configPath();
         try {
             Files.createDirectories(file.getParent());
-            if (!Files.exists(file)) {
-                String template = "# Keep this file private. Do not upload it or share its contents.\n"
-                        + "youtube_api_key=\n"
-                        + "spotify_client_id=\n";
-                Files.writeString(file, template, StandardCharsets.UTF_8);
-            }
             Properties loaded = new Properties();
-            try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-                loaded.load(reader);
+            if (Files.exists(file)) {
+                try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    loaded.load(reader);
+                }
             }
             if (loaded.getProperty("spotify_client_id", "").isBlank()) {
                 loaded.setProperty("spotify_client_id", "274e902910c045aa812c83adfd281356");
-                try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-                    loaded.store(writer, "LyricsFlow service configuration");
-                }
             }
+            if (!loaded.containsKey("youtube_api_key")) {
+                loaded.setProperty("youtube_api_key", "");
+            }
+            try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                loaded.store(writer, "LyricsFlow service configuration. Keep private; do not share.");
+            }
+            values = loaded;
+        } catch (Exception e) {
+            values = new Properties();
+            System.err.println("[LyricsFlow] Could not load service config: " + e.getMessage());
+        }
+    }
+
+    static Path configPath() {
+        return MinecraftClient.getInstance().runDirectory.toPath().resolve("lyricsflow").resolve(FILE_NAME);
+    }
+
+    static String spotifyClientId() {
+        return values.getProperty("spotify_client_id", "274e902910c045aa812c83adfd281356").trim();
+    }
+
+    static String youtubeApiKey() {
+        return values.getProperty("youtube_api_key", "").trim();
+    }
+}
