@@ -137,12 +137,12 @@ public final class LyricsFlowScreen extends Screen {
                 searchYouTube(query);
             }).dimensions(x, y + 26, fieldWidth, 20).build());
 
-            int resultY = y + 51;
-            int count = Math.min(4, youtubeResults.size());
+            int resultY = y + 64;
+            int count = Math.min(3, youtubeResults.size());
             for (int i = 0; i < count; i++) {
                 YouTubeResult result = youtubeResults.get(i);
                 final YouTubeResult chosen = result;
-                String label = trim(result.title, Math.max(18, (fieldWidth - 12) / 6));
+                String label = trim(result.title + " - " + result.channel, Math.max(18, (fieldWidth - 12) / 6));
                 addDrawableChild(ButtonWidget.builder(Text.literal(label), button -> {
                     selectedYoutubeVideoId = chosen.videoId;
                     youtubeSearchStatus = "Dipilih: " + chosen.title;
@@ -423,14 +423,14 @@ public final class LyricsFlowScreen extends Screen {
     private void renderYouTube(DrawContext context, int y) {
         int x = panelLeft + 20;
         if (!youtubeSearchStatus.isBlank()) {
-            context.drawTextWithShadow(textRenderer, trim(youtubeSearchStatus, 52), x, y + 76, 0xFFB0B8C5);
+            context.drawTextWithShadow(textRenderer, trim(youtubeSearchStatus, 52), x, y + 48, 0xFFB0B8C5);
         } else {
-            context.drawTextWithShadow(textRenderer, "Cari video langsung dari menu ini.", x, y + 76, 0xFFB0B8C5);
+            context.drawTextWithShadow(textRenderer, "Cari video langsung dari menu ini.", x, y + 48, 0xFFB0B8C5);
         }
         if (!selectedYoutubeVideoId.isBlank()) {
-            context.drawTextWithShadow(textRenderer, "Video terpilih ID: " + selectedYoutubeVideoId, x, y + 90, 0xFF70C7D8);
+            context.drawTextWithShadow(textRenderer, "Dipilih: " + selectedYoutubeVideoId, x, y + 48, 0xFF70C7D8);
         } else if (!youtubeResults.isEmpty()) {
-            context.drawTextWithShadow(textRenderer, "Pilih salah satu hasil di bawah tombol cari.", x, y + 90, 0xFF8995A7);
+            context.drawTextWithShadow(textRenderer, "Pilih hasil di bawah.", x, y + 48, 0xFF8995A7);
         }
     }
 
