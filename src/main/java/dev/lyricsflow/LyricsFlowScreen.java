@@ -7,6 +7,17 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 /** Main LyricsFlow player shell, drawn with vanilla GUI primitives for Android compatibility. */
 public final class LyricsFlowScreen extends Screen {
     private enum Tab {
@@ -22,6 +33,21 @@ public final class LyricsFlowScreen extends Screen {
     private int selectedTrack;
     private TextFieldWidget playlistInput;
     private TextFieldWidget serviceSearchInput;
+    private final List<YouTubeResult> youtubeResults = new ArrayList<>();
+    private String youtubeSearchStatus = "";
+    private String selectedYoutubeVideoId = "";
+    private boolean youtubeSearching;
+
+    private static final class YouTubeResult {
+        final String videoId;
+        final String title;
+        final String channel;
+        YouTubeResult(String videoId, String title, String channel) {
+            this.videoId = videoId;
+            this.title = title;
+            this.channel = channel;
+        }
+    }
 
     public LyricsFlowScreen() { super(Text.literal("LyricsFlow")); }
 
@@ -104,29 +130,99 @@ public final class LyricsFlowScreen extends Screen {
         serviceSearchInput.setPlaceholder(Text.literal("Judul lagu atau nama artis"));
         addDrawableChild(serviceSearchInput);
 
-        String service = selectedTab == Tab.YOUTUBE ? "YouTube" : "Spotify";
-        addDrawableChild(ButtonWidget.builder(Text.literal("Cari di " + service), button -> {
-            String query = serviceSearchInput.getText().trim();
-            if (query.isEmpty()) {
+        if (selectedTab == Tab.YOUTUBE) {
+            addDrawableChild(ButtonWidget.builder(Text.literal(youtubeSearching ? "Mencari..." : "Cari di YouTube"), button -> {
+                String query = serviceSearchInput.getText().trim();
+                if (query.isEmpty() || youtubeSearching) return;
+                searchYouTube(query);
+            }).dimensions(x, y + 26, fieldWidth, 20).build());
+
+            int resultY = y + 51;
+            int count = Math.min(4, youtubeResults.size());
+            for (int i = 0; i < count; i++) {
+                YouTubeResult result = youtubeResults.get(i);
+                final YouTubeResult chosen = result;
+                String label = trim(result.title, Math.max(18, (fieldWidth - 12) / 6));
+                addDrawableChild(ButtonWidget.builder(Text.literal(label), button -> {
+                    selectedYoutubeVideoId = chosen.videoId;
+                    youtubeSearchStatus = "Dipilih: " + chosen.title;
+                    clearAndInit();
+                }).dimensions(x, resultY + i * 22, fieldWidth, 20).build());
+            }
+        } else {
+            addDrawableChild(ButtonWidget.builder(Text.literal("Cari di Spotify"), button -> {
                 if (client != null) client.inGameHud.setOverlayMessage(
-                        Text.literal("Masukkan judul lagu atau artis dulu."), false);
-                return;
-            }
-            String encoded = java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8)
-                    .replace("+", "%20");
-            String url = selectedTab == Tab.YOUTUBE
-                    ? "https://www.youtube.com/results?search_query=" + encoded
-                    : "https://open.spotify.com/search/" + encoded;
-            if (client != null) {
-                try {
-                    Util.getOperatingSystem().open(url);
-                    client.inGameHud.setOverlayMessage(Text.literal("Membuka pencarian " + service + "..."), false);
-                } catch (RuntimeException exception) {
-                    client.keyboard.setClipboard(url);
-                    client.inGameHud.setOverlayMessage(Text.literal("Gagal membuka otomatis. Link disalin ke clipboard."), false);
+                        Text.literal("Pencarian Spotify dalam game belum tersedia."), false);
+            }).dimensions(x, y + 26, fieldWidth, 20).build());
+        }
+    }
+
+    private void searchYouTube(String query) {
+        youtubeSearching = true;
+        youtubeSearchStatus = "Menghubungi YouTube...";
+        youtubeResults.clear();
+        clearAndInit();
+        Thread worker = new Thread(() -> {
+            List<YouTubeResult> found = new ArrayList<>();
+            String status;
+            try {
+                ServiceConfig.load();
+                String key = ServiceConfig.youtubeApiKey();
+                if (key.isBlank()) {
+                    status = "API key kosong. Isi lyricsflow/services.properties";
+                } else {
+                    String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+                    String address = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q="
+                            + encoded + "&key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
+                    HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(10000);
+                    connection.setReadTimeout(10000);
+                    connection.setRequestProperty("Accept", "application/json");
+                    int code = connection.getResponseCode();
+                    InputStream stream = code >= 200 && code < 300
+                            ? connection.getInputStream() : connection.getErrorStream();
+                    String body;
+                    try (InputStream input = stream) {
+                        body = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+                    } finally {
+                        connection.disconnect();
+                    }
+                    if (code < 200 || code >= 300) {
+                        JsonObject error = JsonParser.parseString(body).getAsJsonObject();
+                        String message = error.has("error")
+                                ? error.getAsJsonObject("error").get("message").getAsString()
+                                : "HTTP " + code;
+                        status = "YouTube API: " + message;
+                    } else {
+                        JsonArray items = JsonParser.parseString(body).getAsJsonObject().getAsJsonArray("items");
+                        for (int i = 0; i < items.size(); i++) {
+                            JsonObject item = items.get(i).getAsJsonObject();
+                            JsonObject id = item.getAsJsonObject("id");
+                            JsonObject snippet = item.getAsJsonObject("snippet");
+                            if (id != null && id.has("videoId") && snippet != null) {
+                                found.add(new YouTubeResult(id.get("videoId").getAsString(),
+                                        snippet.get("title").getAsString(),
+                                        snippet.get("channelTitle").getAsString()));
+                            }
+                        }
+                        status = found.isEmpty() ? "Tidak ada hasil." : "Hasil YouTube: " + found.size();
+                    }
                 }
+            } catch (Exception exception) {
+                status = "Gagal mencari: " + exception.getClass().getSimpleName();
             }
-        }).dimensions(x, y + 28, fieldWidth, 20).build());
+            final String finalStatus = status;
+            if (client != null) client.execute(() -> {
+                youtubeResults.clear();
+                youtubeResults.addAll(found);
+                youtubeSearchStatus = finalStatus;
+                youtubeSearching = false;
+                clearAndInit();
+            });
+        }, "LyricsFlow-YouTube-Search");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private void initLyricsControls() {
@@ -245,8 +341,8 @@ public final class LyricsFlowScreen extends Screen {
             case PLAYER -> renderPlayer(context, contentTop);
             case LYRICS -> renderLyrics(context, contentTop);
             case PLAYLIST -> renderPlaylist(context, contentTop);
-            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Cari lagu, lalu salin link untuk membuka Spotify.");
-            case YOUTUBE -> renderService(context, contentTop, "YouTube", "Cari video musik di YouTube biasa, bukan YouTube Music.");
+            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Pencarian Spotify dalam game belum tersedia.");
+            case YOUTUBE -> renderYouTube(context, contentTop);
             case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses audio Android belum terhubung.");
             case APP -> renderService(context, contentTop, "App", "Pengaturan lengkap tersedia melalui tombol Configure di Mod Menu.");
         }
@@ -322,6 +418,20 @@ public final class LyricsFlowScreen extends Screen {
 
     private static String trim(String value, int max) {
         return value.length() > max ? value.substring(0, max - 3) + "..." : value;
+    }
+
+    private void renderYouTube(DrawContext context, int y) {
+        int x = panelLeft + 20;
+        if (!youtubeSearchStatus.isBlank()) {
+            context.drawTextWithShadow(textRenderer, trim(youtubeSearchStatus, 52), x, y + 76, 0xFFB0B8C5);
+        } else {
+            context.drawTextWithShadow(textRenderer, "Cari video langsung dari menu ini.", x, y + 76, 0xFFB0B8C5);
+        }
+        if (!selectedYoutubeVideoId.isBlank()) {
+            context.drawTextWithShadow(textRenderer, "Video terpilih ID: " + selectedYoutubeVideoId, x, y + 90, 0xFF70C7D8);
+        } else if (!youtubeResults.isEmpty()) {
+            context.drawTextWithShadow(textRenderer, "Pilih salah satu hasil di bawah tombol cari.", x, y + 90, 0xFF8995A7);
+        }
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
