@@ -38,6 +38,8 @@ public final class LyricsFlowScreen extends Screen {
     private String selectedYoutubeVideoId = "";
     private boolean youtubeSearching;
     private int youtubeScrollOffset;
+    private String youtubeNextPageToken = "";
+    private String youtubeLastQuery = "";
 
     private static final class YouTubeResult {
         final String videoId;
@@ -135,7 +137,7 @@ public final class LyricsFlowScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.literal(youtubeSearching ? "Mencari..." : "Cari di YouTube"), button -> {
                 String query = serviceSearchInput.getText().trim();
                 if (query.isEmpty() || youtubeSearching) return;
-                searchYouTube(query);
+                youtubeLastQuery = query;\n                youtubeNextPageToken = \"\";\n                youtubeScrollOffset = 0;\n                searchYouTube(query, \"\", false);
             }).dimensions(x, y + 26, fieldWidth, 20).build());
 
             int resultY = y + 64;
@@ -158,7 +160,7 @@ public final class LyricsFlowScreen extends Screen {
         }
     }
 
-    private void searchYouTube(String query) {
+    private void searchYouTube(String query, String pageToken, boolean append) {
         youtubeSearching = true;
         youtubeSearchStatus = "Menghubungi YouTube...";
         youtubeResults.clear();
@@ -196,7 +198,9 @@ public final class LyricsFlowScreen extends Screen {
                                 : "HTTP " + code;
                         status = "YouTube API: " + message;
                     } else {
-                        JsonArray items = JsonParser.parseString(body).getAsJsonObject().getAsJsonArray("items");
+                        JsonObject response = JsonParser.parseString(body).getAsJsonObject();
+                        nextToken = response.has("nextPageToken") ? response.get("nextPageToken").getAsString() : "";
+                        JsonArray items = response.getAsJsonArray("items");
                         for (int i = 0; i < items.size(); i++) {
                             JsonObject item = items.get(i).getAsJsonObject();
                             JsonObject id = item.getAsJsonObject("id");
@@ -207,7 +211,7 @@ public final class LyricsFlowScreen extends Screen {
                                         snippet.get("channelTitle").getAsString()));
                             }
                         }
-                        status = found.isEmpty() ? "Tidak ada hasil." : "Hasil YouTube: " + found.size();
+                        status = found.isEmpty() ? "Tidak ada hasil." : "Hasil YouTube dimuat: " + found.size();
                     }
                 }
             } catch (Exception exception) {
@@ -222,7 +226,7 @@ public final class LyricsFlowScreen extends Screen {
                 youtubeSearching = false;
                 clearAndInit();
             });
-        }, "LyricsFlow-YouTube-Search");
+        }, append ? "LyricsFlow-YouTube-Next-Page" : "LyricsFlow-YouTube-Search");
         worker.setDaemon(true);
         worker.start();
     }
@@ -432,7 +436,7 @@ public final class LyricsFlowScreen extends Screen {
         if (!selectedYoutubeVideoId.isBlank()) {
             context.drawTextWithShadow(textRenderer, "Dipilih: " + selectedYoutubeVideoId, x, y + 48, 0xFF70C7D8);
         } else if (!youtubeResults.isEmpty()) {
-            context.drawTextWithShadow(textRenderer, "Scroll untuk hasil lainnya (" + (youtubeScrollOffset + 1) + "-" + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size() + ")", x, y + 48, 0xFF8995A7);
+            context.drawTextWithShadow(textRenderer, "Scroll untuk hasil lainnya (" + (youtubeScrollOffset + 1) + "-" + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size() + (youtubeNextPageToken.isBlank() ? "" : " • scroll lanjut") + ")", x, y + 48, 0xFF8995A7);
         }
     }
 
