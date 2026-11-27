@@ -29,7 +29,7 @@ final class ServiceConfig {
             try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 loaded.load(reader);
             }
-            values = loaded;
+            if (loaded.getProperty("spotify_client_id", "").isBlank()) {\n                loaded.setProperty("spotify_client_id", "274e902910c045aa812c83adfd281356");\n                try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) { loaded.store(writer, "LyricsFlow service configuration"); }\n            }\n            values = loaded;
         } catch (IOException exception) {
             values = new Properties();
         }
