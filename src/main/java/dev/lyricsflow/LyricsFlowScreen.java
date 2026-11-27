@@ -5,7 +5,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Util;
+import net.minecraft.util.Identifier;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -16,7 +18,11 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Main LyricsFlow player shell, drawn with vanilla GUI primitives for Android compatibility. */
 public final class LyricsFlowScreen extends Screen {
@@ -40,15 +46,19 @@ public final class LyricsFlowScreen extends Screen {
     private int youtubeScrollOffset;
     private String youtubeNextPageToken = "";
     private String youtubeLastQuery = "";
+    private final Map<String, Identifier> youtubeThumbnails = new HashMap<>();
+    private final Set<String> youtubeThumbnailRequests = new HashSet<>();
 
     private static final class YouTubeResult {
         final String videoId;
         final String title;
         final String channel;
-        YouTubeResult(String videoId, String title, String channel) {
+        final String thumbnailUrl;
+        YouTubeResult(String videoId, String title, String channel, String thumbnailUrl) {
             this.videoId = videoId;
             this.title = title;
             this.channel = channel;
+            this.thumbnailUrl = thumbnailUrl;
         }
     }
 
@@ -148,7 +158,7 @@ public final class LyricsFlowScreen extends Screen {
             for (int i = 0; i < count; i++) {
                 YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
                 final YouTubeResult chosen = result;
-                String label = trim(result.title + " - " + result.channel, Math.max(18, (fieldWidth - 12) / 6));
+                String label = trim(result.title + " - " + result.channel, Math.max(12, (fieldWidth - 48) / 6));
                 addDrawableChild(ButtonWidget.builder(Text.literal(label), button -> {
                     selectedYoutubeVideoId = chosen.videoId;
                     youtubeSearchStatus = "Dipilih: " + chosen.title;
@@ -213,9 +223,16 @@ public final class LyricsFlowScreen extends Screen {
                             JsonObject id = item.getAsJsonObject("id");
                             JsonObject snippet = item.getAsJsonObject("snippet");
                             if (id != null && id.has("videoId") && snippet != null) {
+                                String thumbnail = "";
+                                if (snippet.has("thumbnails")) {
+                                    JsonObject thumbnails = snippet.getAsJsonObject("thumbnails");
+                                    JsonObject image = thumbnails.has("medium") ? thumbnails.getAsJsonObject("medium")
+                                            : thumbnails.has("default") ? thumbnails.getAsJsonObject("default") : null;
+                                    if (image != null && image.has("url")) thumbnail = image.get("url").getAsString();
+                                }
                                 found.add(new YouTubeResult(id.get("videoId").getAsString(),
                                         snippet.get("title").getAsString(),
-                                        snippet.get("channelTitle").getAsString()));
+                                        snippet.get("channelTitle").getAsString(), thumbnail));
                             }
                         }
                         status = found.isEmpty() ? "Tidak ada hasil." : "Hasil YouTube dimuat: " + found.size();
@@ -232,6 +249,7 @@ public final class LyricsFlowScreen extends Screen {
                     youtubeScrollOffset = 0;
                 }
                 youtubeResults.addAll(found);
+                for (YouTubeResult result : found) loadYouTubeThumbnail(result);
                 youtubeNextPageToken = finalNextToken;
                 youtubeSearchStatus = append && !found.isEmpty()
                         ? "Hasil bertambah: " + youtubeResults.size() : finalStatus;
@@ -365,6 +383,48 @@ public final class LyricsFlowScreen extends Screen {
             case APP -> renderService(context, contentTop, "App", "Pengaturan lengkap tersedia melalui tombol Configure di Mod Menu.");
         }
         super.render(context, mouseX, mouseY, delta);
+        if (selectedTab == Tab.YOUTUBE) renderYouTubeThumbnails(context);
+    }
+
+    private void loadYouTubeThumbnail(YouTubeResult result) {
+        if (result.thumbnailUrl.isBlank() || youtubeThumbnails.containsKey(result.videoId)
+                || !youtubeThumbnailRequests.add(result.videoId)) return;
+        Thread worker = new Thread(() -> {
+            NativeImage image = null;
+            try {
+                HttpURLConnection connection = (HttpURLConnection) new URL(result.thumbnailUrl).openConnection();
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestProperty("User-Agent", "LyricsFlow/1.0");
+                try (InputStream input = connection.getInputStream()) {
+                    image = NativeImage.read(input);
+                } finally {
+                    connection.disconnect();
+                }
+            } catch (Exception ignored) {
+                // Thumbnail failure must not break search results.
+            }
+            final NativeImage downloaded = image;
+            if (downloaded != null && client != null) client.execute(() -> {
+                Identifier textureId = client.getTextureManager().registerDynamicTexture(
+                        "lyricsflow_youtube_" + result.videoId, new NativeImageBackedTexture(downloaded));
+                youtubeThumbnails.put(result.videoId, textureId);
+            });
+        }, "LyricsFlow-YouTube-Thumbnail");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void renderYouTubeThumbnails(DrawContext context) {
+        int x = panelLeft + 20 + 2;
+        int resultY = panelTop + 91 + 64;
+        for (int i = 0; i < Math.min(3, Math.max(0, youtubeResults.size() - youtubeScrollOffset)); i++) {
+            YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
+            Identifier texture = youtubeThumbnails.get(result.videoId);
+            if (texture != null) {
+                context.drawTexture(texture, x, resultY + i * 22 + 1, 0.0F, 0.0F, 32, 18, 32, 18);
+            }
+        }
     }
 
     private void renderPlayer(DrawContext context, int y) {
