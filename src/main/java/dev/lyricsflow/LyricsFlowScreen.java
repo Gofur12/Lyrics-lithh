@@ -42,6 +42,7 @@ public final class LyricsFlowScreen extends Screen {
     private final List<YouTubeResult> youtubeResults = new ArrayList<>();
     private String youtubeSearchStatus = "";
     private String selectedYoutubeVideoId = "";
+    private String selectedYoutubeVideoTitle = "";
     private boolean youtubeSearching;
     private int youtubeScrollOffset;
     private String youtubeNextPageToken = "";
@@ -161,6 +162,7 @@ public final class LyricsFlowScreen extends Screen {
                 String label = trim(result.title + " - " + result.channel, Math.max(12, (fieldWidth - 48) / 6));
                 addDrawableChild(ButtonWidget.builder(Text.literal(label), button -> {
                     selectedYoutubeVideoId = chosen.videoId;
+                    selectedYoutubeVideoTitle = chosen.title;
                     youtubeSearchStatus = "Dipilih: " + chosen.title;
                     clearAndInit();
                 }).dimensions(x, resultY + i * 22, fieldWidth, 20).build());
@@ -504,7 +506,7 @@ public final class LyricsFlowScreen extends Screen {
                 ? youtubeSearchStatus
                 : (youtubeResults.isEmpty() ? "Cari video langsung dari menu ini." : "Hasil pencarian YouTube");
         if (!selectedYoutubeVideoId.isBlank()) {
-            status = "Video dipilih: " + selectedYoutubeVideoId;
+            status = "Dipilih: " + selectedYoutubeVideoTitle;
         } else if (!youtubeResults.isEmpty()) {
             status += " (" + (youtubeScrollOffset + 1) + "-"
                     + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size()
@@ -513,6 +515,9 @@ public final class LyricsFlowScreen extends Screen {
         // Keep status below the search button and above the result rows.
         context.drawTextWithShadow(textRenderer, trim(status, 58), x, y + 66,
                 selectedYoutubeVideoId.isBlank() ? 0xFFB0B8C5 : 0xFF70C7D8);
+        if (!selectedYoutubeVideoId.isBlank()) {
+            context.drawTextWithShadow(textRenderer, "ID: " + selectedYoutubeVideoId, x, y + 78, 0xFF8995A7);
+        }
     }
 
     private void renderService(DrawContext context, int y, String name, String description) {
