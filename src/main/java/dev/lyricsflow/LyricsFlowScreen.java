@@ -166,8 +166,10 @@ public final class LyricsFlowScreen extends Screen {
     private void searchYouTube(String query, String pageToken, boolean append) {
         youtubeSearching = true;
         youtubeSearchStatus = "Menghubungi YouTube...";
-        youtubeResults.clear();
-        clearAndInit();
+        if (!append) {
+            youtubeResults.clear();
+            clearAndInit();
+        }
         Thread worker = new Thread(() -> {
             List<YouTubeResult> found = new ArrayList<>();
             String status;
@@ -180,7 +182,8 @@ public final class LyricsFlowScreen extends Screen {
                 } else {
                     String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
                     String address = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q="
-                            + encoded + "&key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
+                            + encoded + (pageToken.isBlank() ? "" : "&pageToken=" + URLEncoder.encode(pageToken, StandardCharsets.UTF_8))
+                            + "&key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
                     HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
                     connection.setRequestMethod("GET");
                     connection.setConnectTimeout(10000);
@@ -223,10 +226,14 @@ public final class LyricsFlowScreen extends Screen {
             }
             final String finalStatus = status;
             if (client != null) client.execute(() -> {
-                youtubeResults.clear();
+                if (!append) {
+                    youtubeResults.clear();
+                    youtubeScrollOffset = 0;
+                }
                 youtubeResults.addAll(found);
-                youtubeScrollOffset = 0;
-                youtubeSearchStatus = finalStatus;
+                youtubeNextPageToken = nextToken;
+                youtubeSearchStatus = append && !found.isEmpty()
+                        ? "Hasil bertambah: " + youtubeResults.size() : finalStatus;
                 youtubeSearching = false;
                 clearAndInit();
             });
@@ -455,10 +462,15 @@ public final class LyricsFlowScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (selectedTab == Tab.YOUTUBE && youtubeResults.size() > 3
+        if (selectedTab == Tab.YOUTUBE && youtubeResults.size() > 0
                 && mouseX >= panelLeft + 12 && mouseX <= panelLeft + panelWidth - 12
                 && mouseY >= panelTop + 150 && mouseY <= panelTop + panelHeight - 12) {
             int maxOffset = Math.max(0, youtubeResults.size() - 3);
+            if (amount < 0 && youtubeScrollOffset >= maxOffset
+                    && !youtubeNextPageToken.isBlank() && !youtubeSearching) {
+                searchYouTube(youtubeLastQuery, youtubeNextPageToken, true);
+                return true;
+            }
             youtubeScrollOffset = Math.max(0, Math.min(maxOffset,
                     youtubeScrollOffset + (amount < 0 ? 1 : -1)));
             clearAndInit();
