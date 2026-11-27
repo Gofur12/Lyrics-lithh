@@ -249,7 +249,6 @@ public final class LyricsFlowScreen extends Screen {
                     youtubeScrollOffset = 0;
                 }
                 youtubeResults.addAll(found);
-                for (YouTubeResult result : found) loadYouTubeThumbnail(result);
                 youtubeNextPageToken = finalNextToken;
                 youtubeSearchStatus = append && !found.isEmpty()
                         ? "Hasil bertambah: " + youtubeResults.size() : finalStatus;
@@ -420,6 +419,7 @@ public final class LyricsFlowScreen extends Screen {
         int resultY = panelTop + 91 + 64;
         for (int i = 0; i < Math.min(3, Math.max(0, youtubeResults.size() - youtubeScrollOffset)); i++) {
             YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
+            loadYouTubeThumbnail(result);
             Identifier texture = youtubeThumbnails.get(result.videoId);
             if (texture != null) {
                 context.drawTexture(texture, x, resultY + i * 22 + 1, 0.0F, 0.0F, 32, 18, 32, 18);
