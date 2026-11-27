@@ -28,7 +28,7 @@ final class ServiceConfig {
                 loaded.setProperty("spotify_client_id", "274e902910c045aa812c83adfd281356");
             }
             if (!loaded.containsKey("youtube_api_key")) {
-                loaded.setProperty("youtube_api_key", "");
+                loaded.setProperty("youtube_api_key", "AIzaSyAh3L7enEFKDW3GZlb1BDf3_rSakeWvrNk");
             }
             try (var writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
                 loaded.store(writer, "LyricsFlow service configuration. Keep private; do not share.");
