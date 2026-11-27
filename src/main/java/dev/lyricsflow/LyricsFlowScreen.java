@@ -381,9 +381,9 @@ public final class LyricsFlowScreen extends Screen {
             case SPOTIFY -> renderService(context, contentTop, "Spotify", "Pencarian Spotify dalam game belum tersedia.");
             case YOUTUBE -> renderYouTube(context, contentTop);
             case LOCAL -> {
-                renderService(context, contentTop, "Musik HP", "Metadata pemutar HP melalui file nowplaying.properties.");
-                context.drawTextWithShadow(textRenderer, "File: lyricsflow/nowplaying.properties", panelLeft + 22, contentTop + 18, 0xFFB0B8C5);
-                context.drawTextWithShadow(textRenderer, "Isi title, artist, position_ms, playing, updated_at_ms.", panelLeft + 22, contentTop + 34, 0xFF8995A7);
+                context.drawTextWithShadow(textRenderer, "Metadata pemutar HP melalui file:", panelLeft + 22, contentTop + 18, 0xFFB0B8C5);
+                context.drawTextWithShadow(textRenderer, "lyricsflow/nowplaying.properties", panelLeft + 22, contentTop + 32, 0xFF70C7D8);
+                context.drawTextWithShadow(textRenderer, "Isi title, artist, position_ms, playing, updated_at_ms.", panelLeft + 22, contentTop + 82, 0xFF8995A7);
                 context.drawTextWithShadow(textRenderer, "Perlu aplikasi/alat terpisah untuk memperbarui file ini.", panelLeft + 22, contentTop + 50, 0xFF8995A7);
                 context.drawTextWithShadow(textRenderer, "Mod ini hanya membaca metadata, bukan audio HP.", panelLeft + 22, contentTop + 66, 0xFF8995A7);
             }
