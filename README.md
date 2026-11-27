@@ -1,18 +1,27 @@
 # LyricsFlow — Fabric 1.20.1 (Android / Zalith)
 
-Client-side LRC lyric overlay and touch-friendly playlist interface for Minecraft Java 1.20.1. Designed to run as **one Fabric JAR** in Android Java launchers such as Zalith Launcher 2.
+Client-side LRC lyric overlay and touch-friendly music/playlist interface for Minecraft Java 1.20.1. Built as one Fabric JAR for Android Java launchers such as Zalith Launcher 2.
 
-## Current status
+## Implemented
 
-This is an early prototype. Working features include:
+- LRC parsing, lyric HUD, current/next lyric preview, and reload.
+- Touch-friendly in-game menu with Player, Lirik, Spotify, YouTube, Musik HP, Playlist, and App tabs.
+- Internal lyric timeline controls: play, pause, stop, and ±5-second seek. This timeline does not control audio playback.
+- Lyric timing offset controls (±100 ms) and persistent settings.
+- Playlist create, rename, delete, track add/remove, and selection. Playlist data is saved to `lyricsflow/playlists.json`.
+- Optional external now-playing metadata import from `lyricsflow/nowplaying.properties`.
+- YouTube Data API v3 song/video search displayed inside the YouTube tab, including result titles, channel names, thumbnails, and paginated results.
 
-- LRC parsing and an in-game lyric HUD.
-- Touch-friendly menu and lyric timing offset controls.
-- Local playlist metadata (playlist names and track-title entries).
-- Manual internal lyric timeline.
-- Optional playback metadata import from a properties file.
+## Not implemented / limitations
 
-**Not implemented:** actual audio playback, YouTube playback/login, Spotify playback/login, Android music-library browsing, or automatic Android media-session access. The YouTube and Spotify tabs now provide song/artist search fields and copy official search links to the clipboard for opening in the Android app or browser. They do not embed or play audio inside Minecraft. The Musik HP and App tabs remain interface placeholders. A Fabric JAR alone cannot provide a native Android WebView or Android notification-listener service.
+- **No audio playback** from YouTube, Spotify, or local Android music.
+- Selecting a YouTube result only records its video ID/title in the UI; it does not open or play the video.
+- Spotify in-game search and Spotify login are not implemented.
+- Android media-session access and Android notification-listener integration are not provided by this Fabric JAR.
+- The Musik HP tab is currently a placeholder.
+- The now-playing properties file is only a metadata bridge. A separate program would need to update it; this mod does not create that bridge app.
+
+A Fabric client mod runs inside Minecraft and does not automatically gain Android app permissions or access to Android's media library.
 
 ## Build
 
@@ -22,16 +31,56 @@ This is an early prototype. Working features include:
 - Java 17
 - Gradle 8.7
 
-GitHub Actions builds the Fabric JAR. Download the `lyricsflow-fabric-1.20.1` artifact from the workflow run's **Artifacts** section.
+GitHub Actions builds the JAR. Download the `lyricsflow-fabric-1.20.1` artifact from the workflow run's **Artifacts** section.
 
-## Install and use
+## Install
 
-1. Download the Fabric JAR artifact.
-2. Put the JAR in the Minecraft instance's `mods` folder.
-3. Launch Minecraft 1.20.1 with Fabric.
-4. On first launch, the mod creates `lyricsflow/current.lrc` in the game directory.
-5. Replace it with an LRC file. For a song-specific file, put `<Song Title>.lrc` in the same `lyricsflow` folder.
-6. On first launch, the mod also creates `lyricsflow/services.properties`. Put your own `youtube_api_key` and `spotify_client_id` values there. Keep this file private; never commit or share it.
+1. Download the `lyricsflow-fabric-1.20.1` artifact ZIP from GitHub Actions and extract the JAR.
+2. Put the JAR in the Minecraft 1.20.1 Fabric instance's `mods` folder.
+3. Launch the instance. The mod creates its `lyricsflow` data folder in the game directory.
+
+## LRC files
+
+Place a default lyric file at `lyricsflow/current.lrc`. For a song-specific file, put `<Song Title>.lrc` in the same folder. Example:
+
+```lrc
+[ti:Song Title]
+[ar:Artist Name]
+[00:00.00]First line
+[00:04.50]Second line
+[00:09.20]Third line
+```
+
+Positive offsets delay lyrics; negative offsets advance them. Offset settings are saved in `lyricsflow/settings.properties`.
+
+## YouTube search setup
+
+1. Enable **YouTube Data API v3** in a Google Cloud project.
+2. Create an API key and keep it private.
+3. Launch the game once so the mod creates `lyricsflow/services.properties`.
+4. Add your key to that local file:
+
+```properties
+youtube_api_key=YOUR_PRIVATE_API_KEY
+```
+
+Do not commit or share `services.properties`. The key is used for YouTube search metadata only. YouTube Data API search does not provide an audio stream for playback.
+
+## Optional now-playing metadata
+
+The mod can read `lyricsflow/nowplaying.properties`. This is only a metadata input; it does not play audio or control another app.
+
+```properties
+title=Song Title
+artist=Artist Name
+position_ms=12500
+playing=true
+updated_at_ms=1795698000000
+```
+
+Update `updated_at_ms` to the current Unix time in milliseconds and refresh it at least every 15 seconds. A separate tool must maintain this file. When fresh metadata is detected, the mod tries to load `lyricsflow/Song Title.lrc`; if missing, it falls back to `lyricsflow/current.lrc`.
+
+## Controls
 
 | Key | Action |
 | --- | --- |
@@ -39,8 +88,6 @@ GitHub Actions builds the Fabric JAR. Download the `lyricsflow-fabric-1.20.1` ar
 | P | Start or pause the internal lyric timeline |
 | L | Reload lyrics |
 | H | Open the touch-friendly menu |
-
-The menu includes overlay, timeline, reload, and timing-offset controls. The YouTube and Spotify tabs accept a song or artist query and copy a search link that can be pasted into the corresponding Android app or browser. This is a search handoff only, not in-game playback or account login. Positive offsets delay lyrics; negative offsets advance them. The offset is saved in `lyricsflow/settings.properties` and limited to ±60,000 ms.
 
 Commands:
 
@@ -53,29 +100,9 @@ Commands:
 - `/lyricsflow offset -500`
 - `/lyricsflow offset reset`
 
-Example LRC:
+## Playlist format
 
-    [00:00.00]First line
-    [00:04.50]Second line
-    [00:09.20]Third line
-
-## Optional playback metadata file
-
-The mod can read `lyricsflow/nowplaying.properties`. This is only a metadata input; it does not play audio or control another app. A separate tool would need to keep this file updated.
-
-Example contents:
-
-    title=Song Title
-    artist=Artist Name
-    position_ms=12500
-    playing=true
-    updated_at_ms=1795698000000
-
-`updated_at_ms` must be the current Unix time in milliseconds and refreshed at least every 15 seconds. The mod checks the file twice per second. When a fresh title is detected, it tries to load `lyricsflow/Song Title.lrc`; if that file is missing, it uses `lyricsflow/current.lrc`. Invalid or stale metadata is ignored.
-
-## Playlist notes
-
-Playlists currently store track-title entries only. Selecting a track loads its matching LRC file (or the fallback `current.lrc`). Playlist controls do not start audio playback.
+Playlist tracks can be entered as `Title | filename.lrc`. Entering only a title lets the mod try to find a matching LRC file automatically. Playlist selection loads lyrics; it does not start music playback.
 
 Sodium and Indium are not required and are not modified by this mod.
 
