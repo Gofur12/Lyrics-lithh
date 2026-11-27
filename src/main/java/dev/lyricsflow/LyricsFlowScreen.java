@@ -49,6 +49,8 @@ public final class LyricsFlowScreen extends Screen {
     private String youtubeLastQuery = "";
     private final Map<String, Identifier> youtubeThumbnails = new HashMap<>();
     private final Set<String> youtubeThumbnailRequests = new HashSet<>();
+    private final List<SpotifyService.Track> spotifyResults = new ArrayList<>();
+    private String spotifySearchStatus = "Hubungkan Spotify untuk mulai.";
 
     private static final class YouTubeResult {
         final String videoId;
@@ -69,7 +71,7 @@ public final class LyricsFlowScreen extends Screen {
     protected void init() {
         clearChildren();
         panelWidth = Math.min(430, Math.max(260, width - 24));
-        panelHeight = Math.min(selectedTab == Tab.YOUTUBE ? 280 : selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
+        panelHeight = Math.min(selectedTab == Tab.YOUTUBE || selectedTab == Tab.SPOTIFY ? 280 : selectedTab == Tab.PLAYLIST ? 250 : 230, Math.max(170, height - 36));
         panelLeft = (width - panelWidth) / 2;
         panelTop = (height - panelHeight) / 2;
 
@@ -168,10 +170,27 @@ public final class LyricsFlowScreen extends Screen {
                 }).dimensions(x, resultY + i * 22, fieldWidth, 20).build());
             }
         } else {
-            addDrawableChild(ButtonWidget.builder(Text.literal("Cari di Spotify"), button -> {
-                if (client != null) client.inGameHud.setOverlayMessage(
-                        Text.literal("Pencarian Spotify dalam game belum tersedia."), false);
+            addDrawableChild(ButtonWidget.builder(Text.literal(SpotifyService.connected() ? "Terhubung" : SpotifyService.loggingIn() ? "Menunggu login..." : "Hubungkan Spotify"), button -> {
+                if (!SpotifyService.connected()) {
+                    SpotifyService.login();
+                    spotifySearchStatus = SpotifyService.status();
+                    clearAndInit();
+                }
             }).dimensions(x, y + 26, fieldWidth, 20).build());
+            addDrawableChild(ButtonWidget.builder(Text.literal("Cari lagu"), button -> {
+                String query = serviceSearchInput.getText().trim();
+                if (query.isEmpty()) { spotifySearchStatus = "Masukkan judul lagu atau artis."; clearAndInit(); return; }
+                spotifySearchStatus = "Mencari di Spotify...";
+                SpotifyService.search(query, tracks -> {
+                    if (client != null) client.execute(() -> {
+                        spotifyResults.clear();
+                        spotifyResults.addAll(tracks);
+                        spotifySearchStatus = SpotifyService.status();
+                        clearAndInit();
+                    });
+                });
+                clearAndInit();
+            }).dimensions(x, y + 50, fieldWidth, 20).build());
         }
     }
 
@@ -378,7 +397,7 @@ public final class LyricsFlowScreen extends Screen {
             case PLAYER -> renderPlayer(context, contentTop);
             case LYRICS -> renderLyrics(context, contentTop);
             case PLAYLIST -> renderPlaylist(context, contentTop);
-            case SPOTIFY -> renderService(context, contentTop, "Spotify", "Pencarian Spotify dalam game belum tersedia.");
+            case SPOTIFY -> renderSpotify(context, contentTop);
             case YOUTUBE -> renderYouTube(context, contentTop);
             case LOCAL -> {
                 context.drawTextWithShadow(textRenderer, "Metadata pemutar HP melalui file:", panelLeft + 22, contentTop + 18, 0xFFB0B8C5);
@@ -504,6 +523,19 @@ public final class LyricsFlowScreen extends Screen {
 
     private static String trim(String value, int max) {
         return value.length() > max ? value.substring(0, max - 3) + "..." : value;
+    }
+
+    private void renderSpotify(DrawContext context, int y) {
+        int x = panelLeft + 20;
+        String connection = SpotifyService.connected() ? "Spotify: Terhubung" : "Spotify: Belum terhubung";
+        context.drawTextWithShadow(textRenderer, connection, x, y + 66, SpotifyService.connected() ? 0xFF70C7D8 : 0xFFB0B8C5);
+        context.drawTextWithShadow(textRenderer, trim(spotifySearchStatus, 58), x, y + 78, 0xFFB0B8C5);
+        for (int i = 0; i < Math.min(4, spotifyResults.size()); i++) {
+            SpotifyService.Track track = spotifyResults.get(i);
+            context.drawTextWithShadow(textRenderer, trim(track.name + " — " + track.artist, 52), x, y + 94 + i * 14, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, trim(track.album, 52), x, y + 106 + i * 14, 0xFF8995A7);
+        }
+        if (!spotifyResults.isEmpty()) context.drawTextWithShadow(textRenderer, "Hasil hanya metadata; audio tidak diputar.", x, y + 154, 0xFF8995A7);
     }
 
     private void renderYouTube(DrawContext context, int y) {
