@@ -11,12 +11,14 @@ Client-side LRC lyric overlay and touch-friendly music/playlist interface for Mi
 - Playlist create, rename, delete, track add/remove, and selection. Playlist data is saved to `lyricsflow/playlists.json`.
 - Optional external now-playing metadata import from `lyricsflow/nowplaying.properties`.
 - YouTube Data API v3 song/video search displayed inside the YouTube tab, including result titles, channel names, thumbnails, and paginated results.
+- Spotify account connection using Authorization Code with PKCE, plus in-game track metadata search. The Spotify Client ID is a public app identifier; no Client Secret is embedded.
 
 ## Not implemented / limitations
 
 - **No audio playback** from YouTube, Spotify, or local Android music.
 - Selecting a YouTube result only records its video ID/title in the UI; it does not open or play the video.
-- Spotify in-game search and Spotify login are not implemented.
+- Spotify login/search requires an internet connection and a Spotify account. The login callback uses the local loopback address `127.0.0.1:8888`; Android/Zalith browser handoff still needs device testing.
+- Spotify search results are metadata only; selecting a result does not play it.
 - Android media-session access and Android notification-listener integration are not provided by this Fabric JAR.
 - The Musik HP tab is currently a placeholder.
 - The now-playing properties file is only a metadata bridge. A separate program would need to update it; this mod does not create that bridge app.
@@ -52,6 +54,16 @@ Place a default lyric file at `lyricsflow/current.lrc`. For a song-specific file
 ```
 
 Positive offsets delay lyrics; negative offsets advance them. Offset settings are saved in `lyricsflow/settings.properties`.
+
+## Spotify setup
+
+1. The Spotify Client ID is preconfigured in `lyricsflow/services.properties` when the mod first launches.
+2. In the Spotify tab, tap **Hubungkan Spotify**. The mod opens the browser for Spotify authorization.
+3. Approve access and wait for the local callback page, then return to Minecraft and search for a track.
+4. The refresh token is stored locally in `lyricsflow/spotify-token.properties`. Keep this file private and do not upload or share it.
+5. The Spotify Developer Dashboard redirect URI must exactly match `http://127.0.0.1:8888/callback`.
+
+The integration uses Authorization Code with PKCE and does not require a Client Secret in the JAR. It only searches track metadata; it does not provide audio playback.
 
 ## YouTube search setup
 
