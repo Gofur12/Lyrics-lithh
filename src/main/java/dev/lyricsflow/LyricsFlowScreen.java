@@ -380,7 +380,13 @@ public final class LyricsFlowScreen extends Screen {
             case PLAYLIST -> renderPlaylist(context, contentTop);
             case SPOTIFY -> renderService(context, contentTop, "Spotify", "Pencarian Spotify dalam game belum tersedia.");
             case YOUTUBE -> renderYouTube(context, contentTop);
-            case LOCAL -> renderService(context, contentTop, "Musik HP", "Akses audio Android belum terhubung.");
+            case LOCAL -> {
+                renderService(context, contentTop, "Musik HP", "Metadata pemutar HP melalui file nowplaying.properties.");
+                context.drawTextWithShadow(textRenderer, "File: lyricsflow/nowplaying.properties", panelLeft + 22, contentTop + 18, 0xFFB0B8C5);
+                context.drawTextWithShadow(textRenderer, "Isi title, artist, position_ms, playing, updated_at_ms.", panelLeft + 22, contentTop + 34, 0xFF8995A7);
+                context.drawTextWithShadow(textRenderer, "Perlu aplikasi/alat terpisah untuk memperbarui file ini.", panelLeft + 22, contentTop + 50, 0xFF8995A7);
+                context.drawTextWithShadow(textRenderer, "Mod ini hanya membaca metadata, bukan audio HP.", panelLeft + 22, contentTop + 66, 0xFF8995A7);
+            }
             case APP -> renderService(context, contentTop, "App", "Pengaturan lengkap tersedia melalui tombol Configure di Mod Menu.");
         }
         super.render(context, mouseX, mouseY, delta);
@@ -522,8 +528,14 @@ public final class LyricsFlowScreen extends Screen {
 
     private void renderService(DrawContext context, int y, String name, String description) {
         if (name.equals("YouTube") || name.equals("Spotify")) {
-            context.drawTextWithShadow(textRenderer, "Masukkan judul/artis, lalu tekan tombol pencarian.", panelLeft + 22, y + 76, 0xFFB0B8C5);
-            context.drawTextWithShadow(textRenderer, "Aplikasi/browser dibuka; audio belum diputar di Minecraft.", panelLeft + 22, y + 90, 0xFF8995A7);
+            if (name.equals("Spotify")) {
+                context.drawTextWithShadow(textRenderer, "Pencarian Spotify belum aktif.", panelLeft + 22, y + 76, 0xFFB0B8C5);
+                context.drawTextWithShadow(textRenderer, "Perlu OAuth/login aman sebelum bisa mencari.", panelLeft + 22, y + 90, 0xFF8995A7);
+                context.drawTextWithShadow(textRenderer, "Client ID saja tidak cukup; jangan masukkan Client Secret ke JAR.", panelLeft + 22, y + 104, 0xFF8995A7);
+            } else {
+                context.drawTextWithShadow(textRenderer, "Pencarian YouTube menampilkan metadata video.", panelLeft + 22, y + 76, 0xFFB0B8C5);
+                context.drawTextWithShadow(textRenderer, "Memilih hasil tidak memutar audio di Minecraft.", panelLeft + 22, y + 90, 0xFF8995A7);
+            }
         } else {
             context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 18, 0xFFB0B8C5);
         }
