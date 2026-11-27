@@ -225,13 +225,14 @@ public final class LyricsFlowScreen extends Screen {
                 status = "Gagal mencari: " + exception.getClass().getSimpleName();
             }
             final String finalStatus = status;
+            final String finalNextToken = nextToken;
             if (client != null) client.execute(() -> {
                 if (!append) {
                     youtubeResults.clear();
                     youtubeScrollOffset = 0;
                 }
                 youtubeResults.addAll(found);
-                youtubeNextPageToken = nextToken;
+                youtubeNextPageToken = finalNextToken;
                 youtubeSearchStatus = append && !found.isEmpty()
                         ? "Hasil bertambah: " + youtubeResults.size() : finalStatus;
                 youtubeSearching = false;
