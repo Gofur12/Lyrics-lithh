@@ -37,6 +37,7 @@ public final class LyricsFlowScreen extends Screen {
     private String youtubeSearchStatus = "";
     private String selectedYoutubeVideoId = "";
     private boolean youtubeSearching;
+    private int youtubeScrollOffset;
 
     private static final class YouTubeResult {
         final String videoId;
@@ -138,9 +139,9 @@ public final class LyricsFlowScreen extends Screen {
             }).dimensions(x, y + 26, fieldWidth, 20).build());
 
             int resultY = y + 64;
-            int count = Math.min(3, youtubeResults.size());
+            int count = Math.min(3, Math.max(0, youtubeResults.size() - youtubeScrollOffset));
             for (int i = 0; i < count; i++) {
-                YouTubeResult result = youtubeResults.get(i);
+                YouTubeResult result = youtubeResults.get(youtubeScrollOffset + i);
                 final YouTubeResult chosen = result;
                 String label = trim(result.title + " - " + result.channel, Math.max(18, (fieldWidth - 12) / 6));
                 addDrawableChild(ButtonWidget.builder(Text.literal(label), button -> {
@@ -172,7 +173,7 @@ public final class LyricsFlowScreen extends Screen {
                     status = "API key kosong. Isi lyricsflow/services.properties";
                 } else {
                     String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
-                    String address = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q="
+                    String address = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=20&q="
                             + encoded + "&key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
                     HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
                     connection.setRequestMethod("GET");
@@ -216,6 +217,7 @@ public final class LyricsFlowScreen extends Screen {
             if (client != null) client.execute(() -> {
                 youtubeResults.clear();
                 youtubeResults.addAll(found);
+                youtubeScrollOffset = 0;
                 youtubeSearchStatus = finalStatus;
                 youtubeSearching = false;
                 clearAndInit();
@@ -430,7 +432,7 @@ public final class LyricsFlowScreen extends Screen {
         if (!selectedYoutubeVideoId.isBlank()) {
             context.drawTextWithShadow(textRenderer, "Dipilih: " + selectedYoutubeVideoId, x, y + 48, 0xFF70C7D8);
         } else if (!youtubeResults.isEmpty()) {
-            context.drawTextWithShadow(textRenderer, "Pilih hasil di bawah.", x, y + 48, 0xFF8995A7);
+            context.drawTextWithShadow(textRenderer, "Scroll untuk hasil lainnya (" + (youtubeScrollOffset + 1) + "-" + Math.min(youtubeScrollOffset + 3, youtubeResults.size()) + "/" + youtubeResults.size() + ")", x, y + 48, 0xFF8995A7);
         }
     }
 
@@ -441,6 +443,20 @@ public final class LyricsFlowScreen extends Screen {
         } else {
             context.drawTextWithShadow(textRenderer, description, panelLeft + 22, y + 18, 0xFFB0B8C5);
         }
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        if (selectedTab == Tab.YOUTUBE && youtubeResults.size() > 3
+                && mouseX >= panelLeft + 12 && mouseX <= panelLeft + panelWidth - 12
+                && mouseY >= panelTop + 145 && mouseY <= panelTop + panelHeight - 40) {
+            int maxOffset = Math.max(0, youtubeResults.size() - 3);
+            youtubeScrollOffset = Math.max(0, Math.min(maxOffset,
+                    youtubeScrollOffset + (amount < 0 ? 1 : -1)));
+            clearAndInit();
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
     @Override public boolean shouldPause() { return false; }
